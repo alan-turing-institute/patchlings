@@ -1,0 +1,4 @@
+(executable
+ (public_name patchlings)
+ (name main)
+ (libraries patchlings unix))
