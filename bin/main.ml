@@ -1,6 +1,7 @@
 open Patchlings
 
 let () =
-  let open Example in
-  let x = adder 3 7 in
-  Printf.printf "3 + 7 = %d\n" x
+  Random.self_init ();
+  let seed = Random.int 1000 in
+  let b = Board.init seed in
+  Board.step (seed + 1) b |> Board.print
