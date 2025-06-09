@@ -11,3 +11,6 @@ val init : int -> board
 
 val print : board -> unit
 (** [print b] prints the board [b] in plain text format to the standard output. *)
+
+val print_clip : board -> int -> int -> int -> unit
+(** [print_clip b x y l] prints a clip of board [b] starting at position (x,y) with size l×l. *)

@@ -41,3 +41,19 @@ let print (b: board) : unit =
     print_newline ()
   ) b
 
+
+  (* Function to print clip of board*)
+  let print_clip (b: board) (x: int) (y: int) (l: int) : unit =
+    print_newline ();
+    for i = y to min (y + l - 1) (Array.length b - 1) do
+      if i >= 0 && i < Array.length b then
+        let row = b.(i) in
+        for j = x to min (x + l - 1) (Array.length row - 1) do
+          if j >= 0 && j < Array.length row then
+            print_string (match row.(j) with
+                          | Good -> "G "
+                          | Bad -> "B ")
+        done;
+        print_newline ()
+    done;
+    print_newline ()
