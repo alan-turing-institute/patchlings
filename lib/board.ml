@@ -2,10 +2,10 @@ type cell_state =
   | Bad
   | Good
 
-type board = cell_state array array
+type t = cell_state array array
 
 (* Function to advance the state of the board *)
-let step (_: int) (b: board) : board =
+let step (_: int) (b: t) : t =
   (* A simple example implementation where we toggle each cell state.
      The random number is not used here for simplicity. *)
   (* Array.map (fun row -> *)
@@ -17,7 +17,7 @@ let step (_: int) (b: board) : board =
   b
 
 (* Function to initialize a board with random states *)
-let init (r: int) : board =
+let init (r: int) : t =
   (* Set dimensions for the board, e.g., 5x5 *)
   let rows = 5 in
   let cols = 5 in
@@ -30,7 +30,7 @@ let init (r: int) : board =
   )
 
 (* Function to print the board *)
-let print (b: board) : unit =
+let print (b: t) : unit =
   print_newline ();
   Array.iter (fun row ->
     Array.iter (fun cell ->
