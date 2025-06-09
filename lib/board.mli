@@ -11,3 +11,5 @@ val init : int -> t
 
 val print : t -> unit
 (** [print b] prints the board [b] in plain text format to the standard output. *)
+
+val get_cell : t -> int * int -> cell_state

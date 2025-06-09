@@ -41,3 +41,5 @@ let print (b: t) : unit =
     print_newline ()
   ) b
 
+
+let get_cell (board: t) (location: int * int) = board.(fst location).(snd location)
