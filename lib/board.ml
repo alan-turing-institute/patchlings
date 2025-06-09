@@ -43,3 +43,21 @@ let print (b: t) : unit =
 
 
 let get_cell (board: t) (location: int * int) = board.(fst location).(snd location)
+
+let observation (board: t) (x: int) (y: int) (size: int) : cell_state array array =
+  let half_size = size / 2 in
+  let board_height = Array.length board in
+  let board_width = if board_height > 0 then Array.length board.(0) else 0 in
+  
+  Array.init size (fun i ->
+    Array.init size (fun j ->
+      let row = x - half_size + i in
+      let col = y - half_size + j in
+      
+      (* Check if coordinates are within board boundaries *)
+      if row >= 0 && row < board_height && col >= 0 && col < board_width then
+        board.(row).(col)
+      else
+        Bad  (* Out of bounds cells are considered Bad *)
+    )
+  )
