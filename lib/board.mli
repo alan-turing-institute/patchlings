@@ -2,12 +2,12 @@ type cell_state =
   | Bad
   | Good
 
-type board
+type t
 
-val step : int -> board -> board
+val step : int -> t -> t
 
-val init : int -> board
+val init : int -> t
 (** [init r] returns a randomly initialized board using the random number [r]. *)
 
-val print : board -> unit
+val print : t -> unit
 (** [print b] prints the board [b] in plain text format to the standard output. *)
