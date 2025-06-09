@@ -43,7 +43,7 @@ let print (b: t) : unit =
 
 
   (* Function to print clip of board*)
-  let print_clip (b: board) (x: int) (y: int) (l: int) : unit =
+  let print_clip (b: t) (x: int) (y: int) (l: int) : unit =
     print_newline ();
     for i = y to min (y + l - 1) (Array.length b - 1) do
       if i >= 0 && i < Array.length b then
