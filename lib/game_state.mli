@@ -9,3 +9,4 @@ val step : int -> t -> t
 val handle_players : t -> t
 val handle_events : t -> t
 val print : t -> unit
+val resolve_effect : int -> Board.t -> Player.t * Intent.t -> Player.t
