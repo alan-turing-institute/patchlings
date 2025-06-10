@@ -9,6 +9,12 @@ type t = {
   behavior : behavior;
 }
 
+let string_of_behavior (b: behavior) =
+  match b with
+  | RandomWalk -> "random walk"
+  | CautiousWalk -> "cautious walk"
+  | Stationary -> "stationary"
+
 let init (location: int * int) (behavior: behavior) = {alive=true; location; behavior}
 
 let step (_: int) (board: Board.t) player =
