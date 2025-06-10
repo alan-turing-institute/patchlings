@@ -8,11 +8,12 @@ type land_type =
 let land_type_to_str (lt: land_type) : string =
   (match lt with
     | Ocean -> "🌊"
-    | Forest -> "🌳"
+    | Forest -> "🌲"
     | Lava -> "🌋"
-    | Open_land -> "🌾"
+    | Open_land -> "🌱"
     | Out_of_bounds -> "⛔️"
   )
+
 
 type cell_state =
   | Bad
@@ -29,16 +30,17 @@ let land_type_to_cell_state (lt: land_type) : cell_state =
 
 type t = land_type array array
 
+(* Initialize an empty board filled with Open_land *)
+let init_empty (rows: int) (cols: int) : t =
+  Array.make_matrix rows cols Open_land
+
+(* Set a cell value *)
+let set_cell (board: t) ((row, col): int * int) (value: land_type) : unit =
+  board.(row).(col) <- value
+
 (* Function to advance the state of the board *)
 let step (_: int) (b: t) : t =
-  (* A simple example implementation where we toggle each cell state.
-     The random number is not used here for simplicity. *)
-  (* Array.map (fun row -> *)
-  (*   Array.map (function *)
-  (*     | Good -> Bad *)
-  (*     | Bad -> Good *)
-  (*   ) row *)
-  (* ) b *)
+  (* Board step is now handled by Board_events module called from game_state *)
   b
 
 

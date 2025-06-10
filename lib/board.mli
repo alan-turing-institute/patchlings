@@ -61,3 +61,9 @@ val observation : t -> int -> int -> int -> land_type array array
 
 val dimensions : t -> int * int
 (** [dimensions board] returns (height, width) of the board *)
+
+val init_empty : int -> int -> t
+(** [init_empty rows cols] creates an empty board filled with Open_land *)
+
+val set_cell : t -> int * int -> land_type -> unit
+(** [set_cell board (row, col) land_type] sets the cell at position (row, col) to the given land_type *)
