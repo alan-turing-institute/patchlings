@@ -20,20 +20,20 @@ let () =
     Bool.not @@ List.fold_left (fun x (y: Player.t) -> x || y.alive) false state.players in
 
   let rec game_loop iteration state =
+    (* Clear the screen *)
+    print_string "\027[2J\027[H";
+    flush stdout;
+
+    Printf.printf "=== Iteration %d ===\n" iteration;
+    flush stdout;
+
+    (* Print the current game state *)
+    Game_state.print_with_players state;
+    flush stdout;
+
     if is_done state then
       ()
     else (
-      (* Clear the screen *)
-      print_string "\027[2J\027[H";
-      flush stdout;
-
-      Printf.printf "=== Iteration %d ===\n" iteration;
-      flush stdout;
-
-      (* Print the current game state *)
-      Game_state.print_with_players state;
-      flush stdout;
-
       (* Handle players and events *)
       let state = Game_state.handle_players state in
       let state = Game_state.handle_events state in

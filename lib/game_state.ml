@@ -83,4 +83,13 @@ let print_with_players state =
                       | Board.Bad -> "🔥")
     done;
     print_newline ()
-  done
+  done;
+
+  (* Print player statuses and time *)
+  print_newline ();
+  List.iteri (fun index player ->
+    let status = if player.Player.alive then "alive" else "dead" in
+    Printf.printf "Player %d: %s %s\n" (index + 1) (if player.Player.alive then "🧍" else "☠️") status
+  ) state.players;
+
+  Printf.printf "Time: %d\n" state.time
