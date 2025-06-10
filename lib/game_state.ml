@@ -1,3 +1,5 @@
+open Board
+
 type t = {
   board : Board.t;
   players : Player.t list;
@@ -10,14 +12,14 @@ let init (board: Board.t) (players: Player.t list) : t =
 let resolve_effect (_: int) (board: Board.t) ((player, intent) : Player.t * Intent.t) =
   let (delta_x, delta_y) = Intent.to_delta intent in
   let (current_x, current_y) = player.location in
-  
+
   (* Get board dimensions for wrapping *)
   let (height, width) = Board.dimensions board in
-  
+
   (* Calculate new position with wrapping *)
   let new_x = ((current_x + delta_x) mod height + height) mod height in
   let new_y = ((current_y + delta_y) mod width + width) mod width in
-  
+
   Player.{alive=player.alive; location=(new_x, new_y)}
 
 let get_intent (_: Board.t) (_: Player.t) =
@@ -41,24 +43,24 @@ let step (seed: int) (state : t) =
   let players'' = List.map (Player.step seed board') players' in
   { board=board'; players=players''; time=state.time + 1; }
 
-let handle_players state = 
+let handle_players state =
   (* For now, do nothing *)
   state
 
-let handle_events state = 
+let handle_events state =
   (* For now, do nothing *)
   state
 
-let print state = 
+let print state =
   Board.print state.board
 
 let print_with_players state =
   print_newline ();
   let board = state.board in
   let (board_height, board_width) = Board.dimensions board in
-  
+
   (* Create a set of player positions for quick lookup *)
-  let player_positions = 
+  let player_positions =
     List.fold_left (fun acc player ->
       if player.Player.alive then
         let (x, y) = player.Player.location in
@@ -70,7 +72,7 @@ let print_with_players state =
         acc
     ) [] state.players
   in
-  
+
   (* Print board with players overlaid *)
   for i = 0 to board_height - 1 do
     for j = 0 to board_width - 1 do
@@ -78,9 +80,7 @@ let print_with_players state =
         print_string "🧍"
       else
         let cell = Board.get_cell board (i, j) in
-        print_string (match cell with
-                      | Board.Good -> "🌱"
-                      | Board.Bad -> "🔥")
+        print_string (land_type_to_str cell)
     done;
     print_newline ()
   done
