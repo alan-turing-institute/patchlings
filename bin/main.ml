@@ -34,11 +34,20 @@ let () =
   in
   let board_height, board_width = Board.dimensions initial_board in
 
+  (* Function to find a safe spawn position *)
+  let rec find_safe_position () =
+    let x = Random.int board_height in
+    let y = Random.int board_width in
+    let terrain = Board.get_cell initial_board (x, y) in
+    match terrain with
+    | Board.Open_land | Board.Forest -> (x, y)  (* Safe positions *)
+    | Board.Ocean | Board.Lava | Board.Out_of_bounds -> find_safe_position ()  (* Try again *)
+  in
+
   let test_players =
     List.init 20 (fun _ ->
-        (* Random position on the board *)
-        let x = Random.int board_height in
-        let y = Random.int board_width in
+        (* Find a safe spawn position *)
+        let x, y = find_safe_position () in
         (* Random behavior *)
         let behavior =
           List.nth behaviors (Random.int (List.length behaviors))
@@ -51,7 +60,7 @@ let () =
   print_endline "=== Initial state ===";
   Game_state.print_with_players initial_state;
 
-  let max_iterations = 100 in
+  let max_iterations = 10000 in
   let game_history = trajectory initial_state |> Seq.take max_iterations in
 
   print_string "\027[2J\027[H";

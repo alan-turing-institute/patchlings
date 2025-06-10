@@ -124,15 +124,36 @@ let string_of_t (state : t) =
            String.concat "" (List.init board_width (fun j -> get_emoji (i, j)))))
   in
   let player_statuses_string =
-    List.map
-      (fun player ->
-        let status = if player.Player.alive then "alive" else "dead" in
-        Printf.sprintf "%s: %s %s %s" player.Player.name
+    (* Create compact player status: just name and alive/dead icon *)
+    let compact_statuses = 
+      List.map (fun player ->
+        Printf.sprintf "%s%s" player.Player.name
           (if player.Player.alive then "🧍" else "☠️")
-          (Player.string_of_behavior player.Player.behavior)
-          status)
-      state.players
-    |> String.concat "\n"
+      ) state.players
+    in
+    (* Helper functions for list manipulation *)
+    let rec take n lst =
+      if n <= 0 || lst = [] then []
+      else match lst with
+      | [] -> []
+      | h :: t -> h :: take (n - 1) t
+    in
+    let rec drop n lst =
+      if n <= 0 then lst
+      else match lst with
+      | [] -> []
+      | _ :: t -> drop (n - 1) t
+    in
+    (* Split into chunks of 10 and format as lines *)
+    let rec chunk_list lst n =
+      if List.length lst <= n then [lst]
+      else 
+        let first_chunk = take n lst in
+        let rest = drop n lst in
+        first_chunk :: chunk_list rest n
+    in
+    let chunks = chunk_list compact_statuses 10 in
+    List.map (String.concat " ") chunks |> String.concat "\n"
   in
   let time_string = Printf.sprintf "Time: %d" state.time in
   let gaia_status = Gaia.status_report state.gaia state.board in
