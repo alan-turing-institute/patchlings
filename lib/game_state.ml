@@ -7,14 +7,30 @@ type t = {
 let init (board: Board.t) (players: Player.t list) : t =
   { board; players; time = 0; }
 
-let resolve_effect (_: int) (_: Board.t) ((player, intent) : Player.t * Intent.t) =
+let resolve_effect (_: int) (board: Board.t) ((player, intent) : Player.t * Intent.t) =
   let (delta_x, delta_y) = Intent.to_delta intent in
   let (current_x, current_y) = player.location in
-  let new_location = (current_x + delta_x, current_y + delta_y) in
-  Player.{alive=player.alive; location=new_location}
+  
+  (* Get board dimensions for wrapping *)
+  let (height, width) = Board.dimensions board in
+  
+  (* Calculate new position with wrapping *)
+  let new_x = ((current_x + delta_x) mod height + height) mod height in
+  let new_y = ((current_y + delta_y) mod width + width) mod width in
+  
+  Player.{alive=player.alive; location=(new_x, new_y)}
 
 let get_intent (_: Board.t) (_: Player.t) =
-  Intent.Stay
+  (* Random walk - choose only cardinal directions (up/down/left/right) and Stay *)
+  let directions = [
+    Intent.North;  (* up *)
+    Intent.South;  (* down *)
+    Intent.East;   (* right *)
+    Intent.West;   (* left *)
+    Intent.Stay    (* no movement *)
+  ] in
+  let index = Random.int (List.length directions) in
+  List.nth directions index
 
 let step (seed: int) (state : t) =
   let board = state.board in
