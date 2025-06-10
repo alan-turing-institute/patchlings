@@ -15,6 +15,14 @@ val handle_events : t -> t
 val is_done : t -> bool
 (** [is_done state] checks if all players are dead *)
 
+val string_of_board_and_players : t -> string
+(** [string_of_board_and_players state] converts the board to a string
+    representation, making sure to include the players on it *)
+
+val string_of_player_statuses : t -> string
+(** [string_of_player_statuses state] converts the players' statuses
+    to a string representation *)
+
 val string_of_t : t -> string
 (** [string_of_t state] converts the game state to a string representation *)
 
