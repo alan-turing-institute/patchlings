@@ -30,6 +30,30 @@ let land_type_to_cell_state (lt: land_type) : cell_state =
 
 type t = land_type array array
 
+(* Terrain generation configuration *)
+type terrain_config = {
+  board_rows: int;
+  board_cols: int;
+  ocean_seeds_min: int;
+  ocean_seeds_range: int;  (* actual seeds = min + random(range) *)
+  forest_seeds_min: int;
+  forest_seeds_range: int;
+  lava_seeds_min: int;
+  lava_seeds_range: int;
+}
+
+(* Default terrain generation configuration *)
+let default_terrain_config = {
+  board_rows = 32;
+  board_cols = 32;
+  ocean_seeds_min = 8;
+  ocean_seeds_range = 5;   (* 8-12 seeds *)
+  forest_seeds_min = 15;
+  forest_seeds_range = 6;  (* 15-20 seeds *)
+  lava_seeds_min = 3;
+  lava_seeds_range = 3;    (* 3-5 seeds *)
+}
+
 (* Initialize an empty board filled with Open_land *)
 let init_empty (rows: int) (cols: int) : t =
   Array.make_matrix rows cols Open_land
@@ -196,53 +220,55 @@ let generate_terrain_layer_local (board: t) (terrain_type: land_type) (seed_coun
   |> fun b -> seed_terrain_local b terrain_type seed_count
   |> fun b -> dilate_local b terrain_type  (* Just one dilation to grow the seeds slightly *)
 
-(* Function to initialize a board with enhanced terrain generation *)
-let init (r: int) : t =
-  (* Set dimensions for the board *)
-  let rows = 32 in
-  let cols = 32 in
+(* Function to initialize a board with specific terrain configuration *)
+let init_with_config (r: int) (config: terrain_config) : t =
   Random.init r;
   
   (* Start with all Open_land (grassland) *)
-  let board = Array.make_matrix rows cols Open_land in
+  let board = Array.make_matrix config.board_rows config.board_cols Open_land in
   
-  (* Layer 1: Ocean/Rivers (8-12 seeds) *)
-  let ocean_seeds = 8 + Random.int 5 in
+  (* Layer 1: Ocean/Rivers *)
+  let ocean_seeds = config.ocean_seeds_min + Random.int config.ocean_seeds_range in
   let board = generate_terrain_layer_local board Ocean ocean_seeds in
   
-  (* Layer 2: Forests (15-20 seeds) *)
-  let forest_seeds = 15 + Random.int 6 in  
+  (* Layer 2: Forests *)
+  let forest_seeds = config.forest_seeds_min + Random.int config.forest_seeds_range in  
   let board = generate_terrain_layer_local board Forest forest_seeds in
   
-  (* Layer 3: Lava (3-5 seeds) *)
-  let lava_seeds = 3 + Random.int 3 in
+  (* Layer 3: Lava *)
+  let lava_seeds = config.lava_seeds_min + Random.int config.lava_seeds_range in
   let board = generate_terrain_layer_local board Lava lava_seeds in
   
   board
 
-(* Enhanced initialization with configurable grid size *)
-let init_with_size (r: int) (grid_size: int) : t =
-  (* Set dimensions for the board *)
-  let rows = 32 in
-  let cols = 32 in
+(* Function to initialize a board with default configuration *)
+let init (r: int) : t =
+  init_with_config r default_terrain_config
+
+(* Enhanced initialization with configurable grid size and terrain config *)
+let init_with_size_and_config (r: int) (grid_size: int) (config: terrain_config) : t =
   Random.init r;
   
   (* Start with all Open_land (grassland) *)
-  let board = Array.make_matrix rows cols Open_land in
+  let board = Array.make_matrix config.board_rows config.board_cols Open_land in
   
   (* Layer 1: Ocean/Rivers with configurable size *)
-  let ocean_seeds = 8 + Random.int 5 in
+  let ocean_seeds = config.ocean_seeds_min + Random.int config.ocean_seeds_range in
   let board = generate_terrain_layer_with_size board Ocean ocean_seeds grid_size in
   
   (* Layer 2: Forests with configurable size *)
-  let forest_seeds = 15 + Random.int 6 in  
+  let forest_seeds = config.forest_seeds_min + Random.int config.forest_seeds_range in  
   let board = generate_terrain_layer_with_size board Forest forest_seeds grid_size in
   
   (* Layer 3: Lava with configurable size *)
-  let lava_seeds = 3 + Random.int 3 in
+  let lava_seeds = config.lava_seeds_min + Random.int config.lava_seeds_range in
   let board = generate_terrain_layer_with_size board Lava lava_seeds grid_size in
   
   board
+
+(* Enhanced initialization with configurable grid size using default config *)
+let init_with_size (r: int) (grid_size: int) : t =
+  init_with_size_and_config r grid_size default_terrain_config
 
 (* Function to print the board *)
 let print (b: t) : unit =
