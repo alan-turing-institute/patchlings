@@ -17,27 +17,67 @@ type t = {
   behavior : behavior;
   age : int;
   visited_tiles : PositionSet.t;
+  name : string;
 }
 
+(* List of 10 random names for players *)
+let random_names =
+  [
+    "Ash";
+    "Sage";
+    "River";
+    "Storm";
+    "Blaze";
+    "Echo";
+    "Frost";
+    "Luna";
+    "Raven";
+    "Sky";
+  ]
+
+(* Counter for assigning names *)
+let name_counter = ref 0
+
+(* Get the next available name *)
+let get_next_name () =
+  let base_name =
+    List.nth random_names (!name_counter mod List.length random_names)
+  in
+  let name =
+    if !name_counter >= List.length random_names then
+      Printf.sprintf "%s%d" base_name
+        ((!name_counter / List.length random_names) + 1)
+    else base_name
+  in
+  incr name_counter;
+  name
 let string_of_behavior (b : behavior) =
   match b with
   | RandomWalk -> "random walk"
   | CautiousWalk -> "cautious walk"
   | Stationary -> "stationary"
 
-let init (location : int * int) (behavior : behavior) =
+let init_with_name (location : int * int) (behavior : behavior) (name : string)
+    =
   {
     alive = true;
     location;
     behavior;
     age = 0;
     visited_tiles = PositionSet.singleton location;
+    name;
   }
+
+let init (location : int * int) (behavior : behavior) =
+  init_with_name location behavior (get_next_name ())
+
+let reset_name_counter () = name_counter := 0
 
 let update_stats player =
   {
     player with
-    age = player.age + 1;
+    age = (if player.alive then player.age + 1 else player.age);
+    (* If the player is alive, update visited tiles *)
     visited_tiles = PositionSet.add player.location player.visited_tiles;
   }
 
