@@ -3,9 +3,15 @@ open Patchlings
 let () =
   Random.self_init ();
   
-  (* Initialize game state with an empty board and no players *)
+  (* Initialize game state with a board and some test players *)
   let initial_board = Board.init (Random.int 1000) in
-  let initial_state = Game_state.init initial_board [] in
+  
+  (* Create 1 test players at different positions *)
+  let test_players = [
+    Player.init (1, 1);
+  ] in
+  
+  let initial_state = Game_state.init initial_board test_players in
   
   let rec game_loop iteration state =
     (* Clear the screen *)
@@ -27,7 +33,7 @@ let () =
     let seed = Random.int 1000 in
     let new_state = Game_state.step seed state in
     
-    Unix.sleepf 0.5;
+    Unix.sleepf 1.5;
     game_loop (iteration + 1) new_state
   in
   

@@ -7,14 +7,31 @@ type t = {
 let init (board: Board.t) (players: Player.t list) : t =
   { board; players; time = 0; }
 
-let resolve_effect (_: int) (_: Board.t) ((player, intent) : Player.t * Intent.t) =
+let resolve_effect (_: int) (board: Board.t) ((player, intent) : Player.t * Intent.t) =
   let (delta_x, delta_y) = Intent.to_delta intent in
   let (current_x, current_y) = player.location in
-  let new_location = (current_x + delta_x, current_y + delta_y) in
-  Player.{alive=player.alive; location=new_location}
+  let new_x = current_x + delta_x in
+  let new_y = current_y + delta_y in
+  
+  (* Get board dimensions for bounds checking *)
+  let (height, width) = Board.dimensions board in
+  
+  (* Check if new position is within bounds *)
+  if new_x >= 0 && new_x < height && new_y >= 0 && new_y < width then
+    Player.{alive=player.alive; location=(new_x, new_y)}
+  else
+    (* Stay in place if move would go out of bounds *)
+    player
 
 let get_intent (_: Board.t) (_: Player.t) =
-  Intent.Stay
+  (* Random walk - choose a random direction including Stay *)
+  let directions = [
+    Intent.North; Intent.Northeast; Intent.East; Intent.Southeast;
+    Intent.South; Intent.Southwest; Intent.West; Intent.Northwest;
+    Intent.Stay
+  ] in
+  let index = Random.int (List.length directions) in
+  List.nth directions index
 
 let step (seed: int) (state : t) =
   let board = state.board in
