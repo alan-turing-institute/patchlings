@@ -92,7 +92,8 @@ let print_with_players state =
   print_newline ();
   List.iteri (fun index player ->
     let status = if player.Player.alive then "alive" else "dead" in
-    Printf.printf "Player %d: %s %s\n" (index + 1) (if player.Player.alive then "🧍" else "☠️") status
+    Printf.printf "Player %d: %s %s %s\n" (index + 1) (if player.Player.alive then "🧍"
+    else "☠️") (Player.string_of_behavior player.Player.behavior) status
   ) state.players;
 
   Printf.printf "Time: %d\n" state.time

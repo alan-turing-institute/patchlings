@@ -81,7 +81,7 @@ let () =
       let seed = Random.int 1000 in
       let new_state = Game_state.step seed state in
 
-      Unix.sleepf 0.3;
+      Unix.sleepf 0.1;
       game_loop (iteration + 1) new_state
     )
   in

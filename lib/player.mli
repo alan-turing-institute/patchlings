@@ -16,4 +16,4 @@ type t = {
 val init : int * int -> behavior -> t
 val step : int -> Board.t -> t -> t
 val get_intent : Board.t -> t -> Intent.t
-val update_stats : t -> t
+val string_of_behavior : behavior -> string

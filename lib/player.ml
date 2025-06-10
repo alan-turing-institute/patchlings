@@ -16,20 +16,13 @@ type t = {
   visited_tiles : PositionSet.t;
 }
 
-let init (location: int * int) (behavior: behavior) = 
-  {
-    alive = true; 
-    location; 
-    behavior;
-    age = 0;
-    visited_tiles = PositionSet.singleton location;
-  }
+let string_of_behavior (b: behavior) =
+  match b with
+  | RandomWalk -> "random walk"
+  | CautiousWalk -> "cautious walk"
+  | Stationary -> "stationary"
 
-let update_stats player =
-  { player with 
-    age = player.age + 1;
-    visited_tiles = PositionSet.add player.location player.visited_tiles;
-  }
+let init (location: int * int) (behavior: behavior) = {alive=true; location; behavior}
 
 let step (_: int) (board: Board.t) player =
   let updated_player = update_stats player in
