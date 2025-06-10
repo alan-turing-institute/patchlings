@@ -291,7 +291,11 @@ let print_with_emojis (b: t) : unit =
   ) b
 
 
-let get_cell (board: t) (location: int * int) = board.(fst location).(snd location)
+let get_cell (board: t) (location: int * int) =
+  let x_raw, y_raw = location in
+  let x = x_raw mod Array.length board in
+  let y = y_raw mod (if Array.length board > 0 then Array.length board.(0) else 0) in
+  board.(x).(y)
 
 let observation (board: t) (x: int) (y: int) (size: int) : land_type array array =
   let half_size = size / 2 in

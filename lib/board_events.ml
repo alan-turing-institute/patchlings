@@ -21,6 +21,7 @@ let default_event_config = {
 (* Helper function to get adjacent open land positions *)
 let get_adjacent_open_positions (board: Board.t) (row: int) (col: int) : (int * int) list =
   let rows, cols = Board.dimensions board in
+
   let positions = ref [] in
 
   (* Check all 8 adjacent positions *)
