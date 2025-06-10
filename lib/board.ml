@@ -19,13 +19,13 @@ let step (_: int) (b: t) : t =
 (* Function to initialize a board with random states *)
 let init (r: int) : t =
   (* Set dimensions for the board, e.g., 5x5 *)
-  let rows = 5 in
-  let cols = 5 in
+  let rows = 32 in
+  let cols = 32 in
   (* Initialize Random seed *)
   Random.init r;
   Array.init rows (fun _ ->
     Array.init cols (fun _ ->
-      if Random.bool () then Good else Bad
+      if Random.float 1.0 > 0.2 then Good else Bad
     )
   )
 
