@@ -4,53 +4,57 @@ let check_python_dependencies () =
   (* Check if python3 is available *)
   let python_check = Sys.command "python3 --version > /dev/null 2>&1" in
   if python_check <> 0 then (
-    Printf.printf "Error: Python 3 is not installed or not accessible via 'python3' command.\n";
+    Printf.printf
+      "Error: Python 3 is not installed or not accessible via 'python3' command.\n";
     Printf.printf "Please install Python 3 to generate plots.\n";
-    exit 1
-  );
-  
+    exit 1);
+
   (* Check if matplotlib is available *)
-  let matplotlib_check = Sys.command "python3 -c 'import matplotlib' > /dev/null 2>&1" in
+  let matplotlib_check =
+    Sys.command "python3 -c 'import matplotlib' > /dev/null 2>&1"
+  in
   if matplotlib_check <> 0 then (
     Printf.printf "Error: matplotlib is not installed.\n";
     Printf.printf "Please install it with: pip3 install matplotlib\n";
-    exit 1
-  );
-  
+    exit 1);
+
   (* Check if numpy is available *)
   let numpy_check = Sys.command "python3 -c 'import numpy' > /dev/null 2>&1" in
   if numpy_check <> 0 then (
     Printf.printf "Error: numpy is not installed.\n";
     Printf.printf "Please install it with: pip3 install numpy\n";
-    exit 1
-  );
-  
+    exit 1);
+
   Printf.printf "✓ Python dependencies check passed\n"
 
 let () =
   Printf.printf "Patchlings 2 - Multi-Agent Simulation\n";
   Printf.printf "====================================\n\n";
-  
+
   Printf.printf "Checking dependencies...\n";
   check_python_dependencies ();
   Printf.printf "\n";
-  
+
   Random.self_init ();
 
   (* Initialize game state with a board and some test players *)
   let initial_board = Board.init (Random.int 10) in
-  
+
   (* Create test players with different behaviors *)
-  let test_players = [
-    Player.init (1, 1) Player.RandomWalk;
-    Player.init (2, 3) Player.CautiousWalk;
-    Player.init (3, 2) Player.Stationary;
-  ] in
+  let test_players =
+    [
+      Player.init (1, 1) Player.RandomWalk;
+      Player.init (2, 3) Player.CautiousWalk;
+      Player.init (3, 2) Player.Stationary;
+    ]
+  in
 
   let initial_state = Game_state.init initial_board test_players in
 
-  let is_done (state: Game_state.t) =
-    Bool.not @@ List.fold_left (fun x (y: Player.t) -> x || y.alive) false state.players in
+  let is_done (state : Game_state.t) =
+    Bool.not
+    @@ List.fold_left (fun x (y : Player.t) -> x || y.alive) false state.players
+  in
 
   let max_iterations = 10 in
 
@@ -67,12 +71,14 @@ let () =
     flush stdout;
 
     if is_done state then (
-      Printf.printf "\nSimulation complete (all players died)! Saving plots...\n";
-      Game_state.save_plots state
-    ) else if iteration >= max_iterations then (
-      Printf.printf "\nSimulation complete (max iterations reached)! Saving plots...\n";
-      Game_state.save_plots state
-    ) else (
+      Printf.printf
+        "\nSimulation complete (all players died)! Saving plots...\n";
+      Game_state.save_plots state)
+    else if iteration >= max_iterations then (
+      Printf.printf
+        "\nSimulation complete (max iterations reached)! Saving plots...\n";
+      Game_state.save_plots state)
+    else
       (* Handle players and events *)
       let state = Game_state.handle_players state in
       let state = Game_state.handle_events state in
@@ -83,7 +89,6 @@ let () =
 
       Unix.sleepf 0.1;
       game_loop (iteration + 1) new_state
-    )
   in
 
   game_loop 1 initial_state

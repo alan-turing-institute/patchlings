@@ -1,4 +1,4 @@
-type cell_state = 
+type cell_state =
   | Bad
   | Good
 
