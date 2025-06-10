@@ -33,6 +33,7 @@ let player_to_json (player : Player.t) : t =
       ("behavior", behavior_to_json player.behavior);
       ("age", `Int player.age);
       ("visited_tiles", position_set_to_json player.visited_tiles);
+      ("name", `String player.name);
     ]
 
 (* JSON serialization for board *)

@@ -41,6 +41,57 @@ let resolve_effect (_ : int) (board : Board.t)
    let index = Random.int (List.length directions) in
    List.nth directions index *)
 
+(* Functions for external runner support (pipe branch functionality) *)
+let get_player_env (board : Board.t) (player : Player.t) =
+  let steps_1d = [ -1; 0; 1 ] in
+  let steps_2d =
+    List.concat
+      (List.map (fun x -> List.map (fun y -> (x, y)) steps_1d) steps_1d)
+  in
+  let loc = player.location in
+  List.map
+    (fun (step : int * int) ->
+      Board.get_cell board (fst loc + fst step, snd loc + snd step))
+    steps_2d
+
+let serialise_env (env : Board.land_type list) =
+  String.concat "," @@ List.map Board.serialise_land_type env
+
+let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
+    (players : Player.t list) =
+  let env_strings =
+    List.map (fun p -> serialise_env (get_player_env board p)) players
+  in
+  Out_channel.output_string r.out_chan @@ String.concat ";" env_strings;
+  Out_channel.output_string r.out_chan "\n";
+  Out_channel.flush r.out_chan;
+  print_endline "Sent envs to manyarms";
+  (* Read intents from the manyarms runner *)
+  let maybe_intents = In_channel.input_line r.in_chan in
+  match maybe_intents with
+  | Some intents ->
+      String.split_on_char ';' intents |> List.map Intent.deserialise_intent
+  | None -> failwith "runner died"
+
+(* Step function with external runner support *)
+let step_with_runner (seed : int) (r : Runner.t) (state : t) =
+  let board = state.board in
+  let players = state.players in
+  let intents = get_intents_from_manyarms r board players in
+  let players' =
+    List.combine players intents |> List.map (resolve_effect seed board)
+  in
+  (* Apply board environmental events using Gaia's balanced configuration *)
+  let gaia_config = Gaia.get_adjusted_config state.gaia board in
+  let board' = Board_events.update_map_events gaia_config board in
+  let players'' = List.map (Player.step seed board') players' in
+  {
+    board = board';
+    players = players'';
+    gaia = state.gaia;
+    time = state.time + 1;
+  }
+
 let handle_players state =
   (* For now, do nothing *)
   state

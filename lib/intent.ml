@@ -19,3 +19,16 @@ let to_delta = function
   | West -> (0, -1)
   | Northwest -> (-1, -1)
   | Stay -> (0, 0)
+
+let deserialise_intent (s : string) =
+  match s with
+  | "0" -> North
+  | "1" -> Northeast
+  | "2" -> East
+  | "3" -> Southeast
+  | "4" -> South
+  | "5" -> Southwest
+  | "6" -> West
+  | "7" -> Northwest
+  | "8" -> Stay
+  | _ -> Stay (* Default to Stay for unknown input *)

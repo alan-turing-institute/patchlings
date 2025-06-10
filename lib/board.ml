@@ -25,6 +25,14 @@ let land_type_to_cell_state (lt : land_type) : cell_state =
   | Open_land -> Good
   | Out_of_bounds -> Bad
 
+let serialise_land_type (lt : land_type) =
+  match lt with
+  | Ocean -> "0"
+  | Open_land -> "1"
+  | Forest -> "2"
+  | Lava -> "3"
+  | Out_of_bounds -> "4"
+
 type t = land_type array array
 
 (* Terrain generation configuration *)
@@ -103,7 +111,6 @@ let count_neighbors_radius (board : t) (terrain_type : land_type) (row : int)
     done
   done;
   !count
-
 let dilate_local (board : t) (terrain_type : land_type) : t =
   let rows = Array.length board in
   let cols = if rows > 0 then Array.length board.(0) else 0 in
@@ -163,7 +170,6 @@ let seed_terrain_local (board : t) (terrain_type : land_type) (count : int) : t
       result.(i).(j) <- board.(i).(j)
     done
   done;
-
   (* Place random seeds *)
   for _ = 1 to count do
     let row = Random.int rows in
