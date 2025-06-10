@@ -29,3 +29,6 @@ setup.log
 _opam/
 
 *.png
+
+# Python 🐍🤯
+.python-version

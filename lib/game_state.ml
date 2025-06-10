@@ -24,9 +24,11 @@ let resolve_effect (_: int) (board: Board.t) ((player, intent) : Player.t * Inte
   let new_x = ((current_x + delta_x) mod height + height) mod height in
   let new_y = ((current_y + delta_y) mod width + width) mod width in
 
-  Player.{alive=player.alive; location=(new_x, new_y)}
+  (* Player.{alive=player.alive; location=(new_x, new_y)} *)
+  Player.{alive=player.alive; location=(new_x, new_y); behavior=player.behavior; age=player.age; visited_tiles=player.visited_tiles}
 
-let get_intent (_: Board.t) (_: Player.t) =
+
+(* let get_intent (_: Board.t) (_: Player.t) =
   (* Random walk - choose only cardinal directions (up/down/left/right) and Stay *)
   let directions = [
     Intent.North;  (* up *)
@@ -36,7 +38,7 @@ let get_intent (_: Board.t) (_: Player.t) =
     Intent.Stay    (* no movement *)
   ] in
   let index = Random.int (List.length directions) in
-  List.nth directions index
+  List.nth directions index *)
 
 let step (seed: int) (state : t) =
   let board = state.board in
@@ -68,7 +70,7 @@ let print_with_players state =
   let (board_height, board_width) = Board.dimensions board in
 
   (* Create a set of player positions for quick lookup *)
-  let player_positions =
+  let player_counts =
     List.fold_left (fun acc player ->
       if player.Player.alive then
         let (x, y) = player.Player.location in
