@@ -19,7 +19,7 @@
  (name patchlings)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune utop core)
+ (depends ocaml dune utop core yojson)
  (tags
   (topics "to describe" your project)))
 
