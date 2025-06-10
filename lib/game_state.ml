@@ -90,38 +90,44 @@ let get_player_positions (state : t) : int CoordinateMap.t =
       else m)
     CoordinateMap.empty state.players
 
-let print state = Board.print state.board
-
-let print_with_players state =
-  print_newline ();
+let string_of_t (state : t) =
   let board = state.board in
   let board_height, board_width = Board.dimensions board in
   let player_counts = get_player_positions state in
-
-  (* Print board with players overlaid *)
-  for i = 0 to board_height - 1 do
-    for j = 0 to board_width - 1 do
+  let get_emoji (i, j) = 
+    let n_players = 
       match CoordinateMap.find_opt (i, j) player_counts with
-      (* at least 1 player found *)
-      | Some player_count ->
-          print_string (if player_count > 1 then "👥" else "🧍")
-      (* no players found *)
-      | None ->
-          let cell = Board.get_cell board (i, j) in
-          print_string (land_type_to_str cell)
-    done;
-    print_newline ()
-  done;
+      | Some count -> count
+      | None -> 0
+    in 
+      if n_players > 1 then "👥"
+      else if n_players == 1 then "🧍"
+      else Board.get_cell board (i, j) |> land_type_to_str
+  in
+  let board_string = 
+    String.concat "\n" (
+      List.init board_height (fun i ->
+        String.concat "" (
+          List.init board_width (fun j ->
+            get_emoji (i, j)
+          )
+        )
+      )
+    ) in
+  let player_statuses_string =
+    List.mapi (fun index player ->
+      let status = if player.Player.alive then "alive" else "dead" in
+      Printf.sprintf "Player %d: %s %s %s" (index + 1) (if player.Player.alive then "🧍"
+      else "☠️") (Player.string_of_behavior player.Player.behavior) status
+    ) state.players
+    |> String.concat "\n" in
+  let time_string = Printf.sprintf "Time: %d" state.time in
+  String.concat "\n" [board_string; player_statuses_string; time_string]
 
-  (* Print player statuses and time *)
+let print_with_players state =
   print_newline ();
-  List.iteri (fun index player ->
-    let status = if player.Player.alive then "alive" else "dead" in
-    Printf.printf "Player %d: %s %s %s\n" (index + 1) (if player.Player.alive then "🧍"
-    else "☠️") (Player.string_of_behavior player.Player.behavior) status
-  ) state.players;
-
-  Printf.printf "Time: %d\n" state.time
+  state |> string_of_t |> print_endline;
+  print_newline ()
 
 let save_plots state =
   let simulation_data = {
