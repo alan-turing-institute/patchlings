@@ -27,3 +27,10 @@ setup.log
 
 # Local OPAM switch
 _opam/
+
+*.png
+
+# Python 🐍🤯
+venv
+.venv
+.python-version

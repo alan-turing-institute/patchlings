@@ -1,3 +1,3 @@
 (library
  (name patchlings)
- (libraries unix))
+ (libraries yojson unix))
