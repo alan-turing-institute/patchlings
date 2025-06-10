@@ -41,6 +41,18 @@ let print (b: t) : unit =
     print_newline ()
   ) b
 
+(* Function to print the board with emojis *)
+let print_with_emojis (b: t) : unit =
+  print_newline ();
+  Array.iter (fun row ->
+    Array.iter (fun cell ->
+      print_string (match cell with
+                    | Good -> "🌱"
+                    | Bad -> "🔥")
+    ) row;
+    print_newline ()
+  ) b
+
 
 let get_cell (board: t) (location: int * int) = board.(fst location).(snd location)
 
@@ -61,3 +73,8 @@ let observation (board: t) (x: int) (y: int) (size: int) : cell_state array arra
         Bad  (* Out of bounds cells are considered Bad *)
     )
   )
+
+let dimensions (board: t) : int * int =
+  let height = Array.length board in
+  let width = if height > 0 then Array.length board.(0) else 0 in
+  (height, width)

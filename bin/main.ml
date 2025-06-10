@@ -16,14 +16,14 @@ let () =
     flush stdout;
     
     (* Print the current game state *)
-    Game_state.print state;
+    Game_state.print_with_players state;
     flush stdout;
     
     (* Handle players and events *)
     let state = Game_state.handle_players state in
     let state = Game_state.handle_events state in
     
-    (* Step the game state (randomizes board) *)
+    (* Step the game state*)
     let seed = Random.int 1000 in
     let new_state = Game_state.step seed state in
     
