@@ -6,9 +6,13 @@ type t = {
 
 val init : Board.t -> Player.t list -> t
 val step : int -> t -> t
-val handle_players : t -> t
-val handle_events : t -> t
 
-(** [print_with_players state] prints the board with emojis and overlays player positions with 🧍 *)
+(** [is_done state] checks if all players are dead *)
+val is_done : t -> bool
+
+(** [string_of_t state] converts the game state to a string representation *)
+val string_of_t : t -> string
+
+(** [print_with_players state] prints the string representation of [state] *)
 val print_with_players : t -> unit
 val resolve_effect : int -> Board.t -> Player.t * Intent.t -> Player.t

@@ -36,7 +36,19 @@ let resolve_effect (_: int) (board: Board.t) ((player, intent) : Player.t * Inte
   let index = Random.int (List.length directions) in
   List.nth directions index *)
 
+let handle_players state =
+  (* For now, do nothing *)
+  state
+
+let handle_events state =
+  (* For now, do nothing *)
+  state
+
 let step (seed: int) (state : t) =
+  (* Handle players and events *)
+  let state = handle_players state in
+  let state = handle_events state in
+
   let board = state.board in
   let players = state.players in
   let intents = List.map (Player.get_intent board) players in
@@ -46,13 +58,8 @@ let step (seed: int) (state : t) =
   
   { board=board'; players=players''; time=state.time + 1; }
 
-let handle_players state =
-  (* For now, do nothing *)
-  state
-
-let handle_events state =
-  (* For now, do nothing *)
-  state
+let is_done (state: t) =
+  List.for_all (fun player -> not player.Player.alive) state.players
 
 module Coordinate = struct
   type t = int * int
