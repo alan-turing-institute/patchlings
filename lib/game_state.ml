@@ -118,8 +118,9 @@ let string_of_t (state : t) =
   let player_statuses_string =
     List.mapi (fun index player ->
       let status = if player.Player.alive then "alive" else "dead" in
-      Printf.sprintf "Player %d: %s %s %s" (index + 1) (if player.Player.alive then "🧍"
-      else "☠️") (Player.string_of_behavior player.Player.behavior) status
+      let age = player.Player.age in
+      Printf.sprintf "Player %d: %s %s %s %d" (index + 1) (if player.Player.alive then "🧍"
+      else "☠️") (Player.string_of_behavior player.Player.behavior) status age
     ) state.players
     |> String.concat "\n" in
   let time_string = Printf.sprintf "Time: %d" state.time in

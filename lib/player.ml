@@ -34,7 +34,8 @@ let init (location: int * int) (behavior: behavior) =
 
 let update_stats player =
   { player with 
-    age = player.age + 1;
+    age = if player.alive then player.age + 1 else player.age;
+    (* If the player is alive, update visited tiles *)
     visited_tiles = PositionSet.add player.location player.visited_tiles;
   }
 
