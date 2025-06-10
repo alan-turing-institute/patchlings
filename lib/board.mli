@@ -15,14 +15,37 @@ val land_type_to_cell_state : land_type -> cell_state
 
 type t
 
+(** Terrain generation configuration *)
+type terrain_config = {
+  board_rows: int;
+  board_cols: int;
+  ocean_seeds_min: int;
+  ocean_seeds_range: int;  (** actual seeds = min + random(range) *)
+  forest_seeds_min: int;
+  forest_seeds_range: int;
+  lava_seeds_min: int;
+  lava_seeds_range: int;
+}
+
+(** Default terrain generation configuration *)
+val default_terrain_config : terrain_config
+
 val step : int -> t -> t
 
 val init : int -> t
-(** [init r] returns a randomly initialized board using the random number [r]. *)
+(** [init r] returns a randomly initialized board using the random number [r] and default configuration. *)
+
+val init_with_config : int -> terrain_config -> t
+(** [init_with_config r config] returns a randomly initialized board using the random number [r] 
+    and specified terrain configuration. *)
 
 val init_with_size : int -> int -> t
 (** [init_with_size r grid_size] returns a randomly initialized board using the random number [r] 
     and terrain grouping size [grid_size]. Higher grid_size creates larger, more consolidated terrain regions. *)
+
+val init_with_size_and_config : int -> int -> terrain_config -> t
+(** [init_with_size_and_config r grid_size config] returns a randomly initialized board using the random number [r], 
+    terrain grouping size [grid_size], and specified terrain configuration. *)
 
 val generate_terrain_layer_with_size : t -> land_type -> int -> int -> t
 (** [generate_terrain_layer_with_size board terrain_type seed_count size] generates a terrain layer 
