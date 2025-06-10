@@ -64,45 +64,57 @@ let handle_events state =
   (* For now, do nothing *)
   state
 
+module Coordinate = struct
+  type t = int * int
+
+  let compare a b =
+    match compare (fst a) (fst b) with
+    | 0 -> compare (snd a) (snd b)
+    | cmp -> cmp
+end
+
+module CoordinateMap = Map.Make (Coordinate)
+
+let player_in_bounds (board : Board.t) (player : Player.t) =
+  let height, width = Board.dimensions board in
+  let x, y = player.location in
+  x >= 0 && x < height && y >= 0 && y < width
+
+let get_player_positions (state : t) : int CoordinateMap.t =
+  List.fold_left
+    (fun m player ->
+      if player.Player.alive && player_in_bounds state.board player then
+        let updated_count =
+          match CoordinateMap.find_opt player.location m with
+          | None -> 1
+          | Some count -> count + 1
+        in
+        CoordinateMap.add player.location updated_count m
+      else m)
+    CoordinateMap.empty state.players
+
 let print state = Board.print state.board
 
 let print_with_players state =
   print_newline ();
   let board = state.board in
   let board_height, board_width = Board.dimensions board in
-
-  (* Count players at each position *)
-  let player_counts =
-    List.fold_left
-      (fun acc player ->
-        if player.Player.alive then
-          let x, y = player.Player.location in
-          if x >= 0 && x < board_height && y >= 0 && y < board_width then
-            let pos = (x, y) in
-            let current_count = try List.assoc pos acc with Not_found -> 0 in
-            (pos, current_count + 1) :: List.remove_assoc pos acc
-          else acc
-        else acc)
-      [] state.players
-  in
+  let player_counts = get_player_positions state in
 
   (* Print board with players overlaid *)
   for i = 0 to board_height - 1 do
     for j = 0 to board_width - 1 do
-      let pos = (i, j) in
-      let player_count =
-        try List.assoc pos player_counts with Not_found -> 0
-      in
-
-      if player_count > 1 then
-        print_string "👥" (* crowd emoji for multiple players *)
-      else if player_count = 1 then print_string "🧍" (* single person emoji *)
-      else
-        let cell = Board.get_cell board (i, j) in
-        print_string
-          (match cell with
-          | Board.Good -> "🌱"
-          | Board.Bad -> "🔥")
+      match CoordinateMap.find_opt (i, j) player_counts with
+      (* at least 1 player found *)
+      | Some player_count ->
+          print_string (if player_count > 1 then "👥" else "🧍")
+      (* no players found *)
+      | None ->
+          let cell = Board.get_cell board (i, j) in
+          print_string
+            (match cell with
+            | Board.Good -> "🌱"
+            | Board.Bad -> "🔥")
     done;
     print_newline ()
   done;
