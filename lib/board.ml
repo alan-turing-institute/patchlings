@@ -27,6 +27,14 @@ let land_type_to_cell_state (lt: land_type) : cell_state =
     | Out_of_bounds -> Bad
   )
 
+let serialise_land_type (lt : land_type) =
+  match lt with
+  | Ocean -> "0"
+  | Open_land -> "1"
+  | Forest -> "2"
+  | Lava -> "3"
+  | Out_of_bounds -> "4"
+
 type t = land_type array array
 
 (* Function to advance the state of the board *)

@@ -5,11 +5,11 @@ let () =
   Printf.printf "Patchlings 2 - Multi-Agent Simulation\n";
   Printf.printf "====================================\n\n";
   
-  
   Random.self_init ();
 
   (* Initialize game state with a board and some test players *)
   let initial_board = Board.init (Random.int 10) in
+  let runner = Runner.init() in
   
   (* Create test players with different behaviors *)
   let test_players = [
@@ -61,7 +61,7 @@ let () =
 
       (* Step the game state*)
       let seed = Random.int 1000 in
-      let new_state = Game_state.step seed state in
+      let new_state = Game_state.step seed runner state in
 
       (* Add new state to history *)
       game_history := new_state :: !game_history;

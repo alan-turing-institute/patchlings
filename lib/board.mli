@@ -35,3 +35,5 @@ val observation : t -> int -> int -> int -> land_type array array
 
 val dimensions : t -> int * int
 (** [dimensions board] returns (height, width) of the board *)
+
+val serialise_land_type : land_type -> string
