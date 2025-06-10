@@ -2,10 +2,14 @@ type t = {
   board : Board.t;
   players : Player.t list;
   time : int;
+  histories : Plotting.player_history list;
 }
 
 let init (board: Board.t) (players: Player.t list) : t =
-  { board; players; time = 0; }
+  let histories = List.mapi (fun i player -> 
+    Plotting.init_history i player.Player.behavior
+  ) players in
+  { board; players; time = 0; histories; }
 
 let resolve_effect (_: int) (board: Board.t) ((player, intent) : Player.t * Intent.t) =
   let (delta_x, delta_y) = Intent.to_delta intent in
@@ -18,7 +22,7 @@ let resolve_effect (_: int) (board: Board.t) ((player, intent) : Player.t * Inte
   let new_x = ((current_x + delta_x) mod height + height) mod height in
   let new_y = ((current_y + delta_y) mod width + width) mod width in
   
-  Player.{alive=player.alive; location=(new_x, new_y); behavior=player.behavior}
+  Player.{alive=player.alive; location=(new_x, new_y); behavior=player.behavior; age=player.age; visited_tiles=player.visited_tiles}
 
 let step (seed: int) (state : t) =
   let board = state.board in
@@ -27,7 +31,11 @@ let step (seed: int) (state : t) =
   let players' = List.combine players intents |> List.map (resolve_effect seed board) in
   let board' = Board.step seed board in
   let players'' = List.map (Player.step seed board') players' in
-  { board=board'; players=players''; time=state.time + 1; }
+  
+  (* Update histories *)
+  let histories' = List.map2 Plotting.update_history players'' state.histories in
+  
+  { board=board'; players=players''; time=state.time + 1; histories=histories'; }
 
 let handle_players state = 
   (* For now, do nothing *)
@@ -88,3 +96,11 @@ let print_with_players state =
   ) state.players;
 
   Printf.printf "Time: %d\n" state.time
+
+let save_plots state =
+  let simulation_data = {
+    Plotting.histories = state.histories;
+    Plotting.max_time = state.time;
+  } in
+  Plotting.create_line_plot simulation_data "player_ages_over_time.dat";
+  Plotting.create_bar_plot simulation_data "player_unique_tiles.dat"
