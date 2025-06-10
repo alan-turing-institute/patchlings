@@ -70,8 +70,11 @@ let get_intent (board: Board.t) (player: t) =
     let safe_directions = 
       List.filter (fun direction ->
         match get_cell_in_direction board player.location direction with
-        | Board.Good -> true
-        | Board.Bad -> false
+        | Board.Open_land -> true
+        | Board.Forest -> true
+        | Board.Ocean -> false
+        | Board.Lava -> false
+        | Board.Out_of_bounds -> false
       ) [Intent.North; Intent.South; Intent.East; Intent.West]
     in
     
