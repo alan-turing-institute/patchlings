@@ -5,6 +5,8 @@
 ### Executive Summary
 After implementing Patchlings in OCaml, we must admit our grave error in judgment. Python would have been the superior choice, and we were utterly foolish to think otherwise.
 
+![img](./images/img1.png)
+
 ### The Painful Reality of OCaml
 
 #### 1. **Type System Tyranny**
