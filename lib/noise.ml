@@ -1,0 +1,1 @@
+let hills x y = sin x /. 2. +. cos y /. 2. +. 0.5 

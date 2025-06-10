@@ -48,10 +48,12 @@ let init (r: int) : t =
   let cols = 32 in
   (* Initialize Random seed *)
   Random.init r;
-  Array.init rows (fun _ ->
-    Array.init cols (fun _ ->
+  Array.init rows (fun row ->
+    Array.init cols (fun col ->
       (* if Random.float 1.0 > 0.2 then Good else Bad *)
-      let r = Random.float 1.0 in
+      let row = float_of_int row in
+      let col = float_of_int col in
+      let r = Noise.hills row col in
       if r < 0.3 then
         Ocean
       else if r < 0.6 then
