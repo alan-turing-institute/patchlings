@@ -30,6 +30,24 @@ let land_type_to_cell_state (lt: land_type) : cell_state =
 
 type t = land_type array array
 
+(* Event configuration type *)
+type event_config = {
+  forest_death_chance: int;      (* percentage chance *)
+  forest_growth_chance: int;     (* percentage chance *)
+  volcano_spawn_chance: int;     (* percentage chance *)
+  volcano_clear_chance: int;     (* percentage chance *)
+  ocean_spread_chance: int;      (* percentage chance *)
+}
+
+(* Default configuration *)
+let default_event_config = {
+  forest_death_chance = 5;
+  forest_growth_chance = 5;
+  volcano_spawn_chance = 1;
+  volcano_clear_chance = 5;
+  ocean_spread_chance = 5;
+}
+
 (* Helper function to get adjacent open land positions *)
 let get_adjacent_open_positions (board: t) (row: int) (col: int) : (int * int) list =
   let rows = Array.length board in
@@ -49,19 +67,48 @@ let get_adjacent_open_positions (board: t) (row: int) (col: int) : (int * int) l
   done;
   !positions
 
-(* Process environment events for a single cell *)
-let process_cell_event (board: t) (row: int) (col: int) : land_type =
-  let current = board.(row).(col) in
-  match current with
-  | Forest ->
-      (* Forest can die with 5% chance *)
-      if Random.int 100 < 5 then Open_land else current
-  | Lava ->
-      (* Volcano can turn into open space with 5% chance *)
-      if Random.int 100 < 5 then Open_land else current
-  | Ocean | Open_land | Out_of_bounds ->
-      (* Any non-forest/lava tile has 1% chance to become volcano *)
-      if current <> Out_of_bounds && Random.int 100 < 1 then Lava else current
+(* Process forest death events *)
+let process_forest_death (config: event_config) (board: t) : t =
+  let rows = Array.length board in
+  let cols = if rows > 0 then Array.length board.(0) else 0 in
+  let result = Array.make_matrix rows cols Open_land in
+  
+  (* Copy board and process forest death *)
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      result.(i).(j) <- 
+        if board.(i).(j) = Forest && Random.int 100 < config.forest_death_chance then
+          Open_land
+        else
+          board.(i).(j)
+    done
+  done;
+  result
+
+(* Process volcano events (spawning and clearing) *)
+let process_volcano_events (config: event_config) (board: t) : t =
+  let rows = Array.length board in
+  let cols = if rows > 0 then Array.length board.(0) else 0 in
+  let result = Array.make_matrix rows cols Open_land in
+  
+  (* Copy board and process volcano events *)
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      let current = board.(i).(j) in
+      result.(i).(j) <- 
+        match current with
+        | Lava ->
+            (* Volcano can clear with configured chance *)
+            if Random.int 100 < config.volcano_clear_chance then Open_land else current
+        | Ocean | Open_land ->
+            (* Can become volcano with configured chance *)
+            if Random.int 100 < config.volcano_spawn_chance then Lava else current
+        | Forest | Out_of_bounds ->
+            (* Forest and out of bounds tiles don't spawn volcanoes *)
+            current
+    done
+  done;
+  result
 
 (* Helper function to check if a position has adjacent ocean *)
 let has_adjacent_ocean (board: t) (row: int) (col: int) : bool =
@@ -85,7 +132,7 @@ let has_adjacent_ocean (board: t) (row: int) (col: int) : bool =
   check_positions deltas
 
 (* Process ocean spreading - only to adjacent open spaces connected to existing oceans *)
-let process_ocean_spread (board: t) : t =
+let process_ocean_spread (config: event_config) (board: t) : t =
   let rows = Array.length board in
   let cols = if rows > 0 then Array.length board.(0) else 0 in
   let result = Array.make_matrix rows cols Open_land in
@@ -101,8 +148,8 @@ let process_ocean_spread (board: t) : t =
   for i = 0 to rows - 1 do
     for j = 0 to cols - 1 do
       if board.(i).(j) = Open_land && has_adjacent_ocean board i j then (
-        (* 5% chance to become ocean if adjacent to ocean *)
-        if Random.int 100 < 5 then
+        (* Chance to become ocean if adjacent to ocean *)
+        if Random.int 100 < config.ocean_spread_chance then
           result.(i).(j) <- Ocean
       )
     done
@@ -110,7 +157,7 @@ let process_ocean_spread (board: t) : t =
   result
 
 (* Process forest growth separately to avoid conflicts *)
-let process_forest_growth (board: t) : t =
+let process_forest_growth (config: event_config) (board: t) : t =
   let rows = Array.length board in
   let cols = if rows > 0 then Array.length board.(0) else 0 in
   let result = Array.make_matrix rows cols Open_land in
@@ -126,8 +173,8 @@ let process_forest_growth (board: t) : t =
   for i = 0 to rows - 1 do
     for j = 0 to cols - 1 do
       if board.(i).(j) = Forest then (
-        (* 5% chance to grow to an adjacent open space *)
-        if Random.int 100 < 5 then (
+        (* Chance to grow to an adjacent open space *)
+        if Random.int 100 < config.forest_growth_chance then (
           let open_positions = get_adjacent_open_positions board i j in
           if List.length open_positions > 0 then (
             let index = Random.int (List.length open_positions) in
@@ -140,24 +187,25 @@ let process_forest_growth (board: t) : t =
   done;
   result
 
+(* Type for event processing functions *)
+type event_processor = event_config -> t -> t
+
+(* List of all event processors in order *)
+let event_processors : event_processor list = [
+  process_forest_death;
+  process_volcano_events;
+  process_ocean_spread;
+  process_forest_growth;
+]
+
+(* Main event update function *)
+let update_map_events (config: event_config) (board: t) : t =
+  List.fold_left (fun board processor -> processor config board) board event_processors
+
 (* Function to advance the state of the board *)
 let step (seed: int) (b: t) : t =
   Random.init seed;
-  let rows = Array.length b in
-  let cols = if rows > 0 then Array.length b.(0) else 0 in
-  
-  (* First, process all cell events (death, volcano spawning, etc.) *)
-  let after_events = Array.init rows (fun i ->
-    Array.init cols (fun j ->
-      process_cell_event b i j
-    )
-  ) in
-  
-  (* Process ocean spreading *)
-  let after_ocean = process_ocean_spread after_events in
-  
-  (* Then process forest growth on the updated board *)
-  process_forest_growth after_ocean
+  update_map_events default_event_config b
 
 
 (* Enhanced terrain generation with morphological operations *)
