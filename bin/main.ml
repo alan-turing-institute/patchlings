@@ -27,20 +27,23 @@ let () =
   (* Create test players with different behaviors *)
   (* Reset name counter to ensure consistent names *)
   Player.reset_name_counter ();
-  
+
   (* Create 20 players with random positions and behaviors *)
-  let behaviors = [Player.RandomWalk; Player.CautiousWalk; Player.Stationary] in
+  let behaviors =
+    [ Player.RandomWalk; Player.CautiousWalk; Player.Stationary ]
+  in
   let board_height, board_width = Board.dimensions initial_board in
-  
+
   let test_players =
     List.init 20 (fun _ ->
-      (* Random position on the board *)
-      let x = Random.int board_height in
-      let y = Random.int board_width in
-      (* Random behavior *)
-      let behavior = List.nth behaviors (Random.int (List.length behaviors)) in
-      Player.init (x, y) behavior
-    )
+        (* Random position on the board *)
+        let x = Random.int board_height in
+        let y = Random.int board_width in
+        (* Random behavior *)
+        let behavior =
+          List.nth behaviors (Random.int (List.length behaviors))
+        in
+        Player.init (x, y) behavior)
   in
 
   let initial_state = Game_state.init initial_board test_players in

@@ -10,25 +10,24 @@ type land_type =
   | Out_of_bounds
 
 val land_type_to_str : land_type -> string
-
 val land_type_to_cell_state : land_type -> cell_state
 
 type t
 
-(** Terrain generation configuration *)
 type terrain_config = {
-  board_rows: int;
-  board_cols: int;
-  ocean_seeds_min: int;
-  ocean_seeds_range: int;  (** actual seeds = min + random(range) *)
-  forest_seeds_min: int;
-  forest_seeds_range: int;
-  lava_seeds_min: int;
-  lava_seeds_range: int;
+  board_rows : int;
+  board_cols : int;
+  ocean_seeds_min : int;
+  ocean_seeds_range : int;  (** actual seeds = min + random(range) *)
+  forest_seeds_min : int;
+  forest_seeds_range : int;
+  lava_seeds_min : int;
+  lava_seeds_range : int;
 }
+(** Terrain generation configuration *)
 
-(** Default terrain generation configuration *)
 val default_terrain_config : terrain_config
+(** Default terrain generation configuration *)
 
 val step : int -> t -> t
 
