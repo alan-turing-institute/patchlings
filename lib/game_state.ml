@@ -64,6 +64,7 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     List.map (fun p -> serialise_env (get_player_env board p)) players
   in
   let to_write = String.concat "," (List.map Int32.to_string env_int32s) in
+  print_endline to_write;
   Out_channel.output_string r.out_chan to_write;
 
   Out_channel.output_string r.out_chan "\n";
