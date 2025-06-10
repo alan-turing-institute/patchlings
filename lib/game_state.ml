@@ -47,19 +47,19 @@ let get_player_env (board : Board.t) (player : Player.t) =
   List.map (fun (step : int * int) -> (Board.get_cell board (fst(loc) + fst(step),
   snd(loc) + snd(step)))) steps_2d
 
-let serialise_env (env : Board.land_type list) = List.fold_left (fun acc x ->
-  String.concat acc [","; x]) "" @@ List.map Board.serialise_land_type env
+let serialise_env (env : Board.land_type list) = String.concat "," @@ List.map Board.serialise_land_type env
 
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t) (players : Player.t list) =
   let env_strings = List.map (fun p -> serialise_env (get_player_env board p)) players in
-  Out_channel.output_string r.out_chan @@ List.fold_left (fun acc x -> String.concat acc [";"; x]) "" env_strings;
+  Out_channel.output_string r.out_chan @@ String.concat ";" env_strings;
+  Out_channel.output_string r.out_chan "\n";
   Out_channel.flush r.out_chan;
   print_endline "Sent envs to manyarms";
   (* Read intents from the manyarms runner *)
   let maybe_intents = In_channel.input_line r.in_chan in
   match maybe_intents with
   | Some intents ->
-    String.split_on_char ',' intents |> List.map Intent.deserialise_intent
+    String.split_on_char ';' intents |> List.map Intent.deserialise_intent
   | None -> failwith "runner died"
 
 let step (seed: int) (r : Runner.t) (state : t) =
@@ -70,7 +70,6 @@ let step (seed: int) (r : Runner.t) (state : t) =
   let players' = List.combine players intents |> List.map (resolve_effect seed board) in
   let board' = Board.step seed board in
   let players'' = List.map (Player.step seed board') players' in
-  
   { board=board'; players=players''; time=state.time + 1; }
 
 let handle_players state =
