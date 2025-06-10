@@ -1,7 +1,7 @@
 open Patchlings
 
 (* Generate a stream of game states, starting from an initial state. *)
-let trajectory (initial_state : Game_state.t) : Game_state.t Seq.t =
+let _trajectory (initial_state : Game_state.t) : Game_state.t Seq.t =
   let unfold_step state =
     if Game_state.is_done state then None
     else
@@ -18,8 +18,9 @@ let () =
   Random.self_init ();
 
   (* Initialize game state with a board and some test players *)
-  let initial_board = Board.init (Random.int 10) in
-
+  (* Use different grid sizes to demonstrate terrain grouping *)
+  let grid_size = 2 in  (* Try changing this to 1, 2, or 3 to see different effects *)
+  let initial_board = Board.init_with_size (Random.int 10) grid_size in
   (* Create test players with different behaviors *)
   let test_players =
     [
