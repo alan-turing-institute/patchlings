@@ -2,9 +2,11 @@ type t = {
   board : Board.t;
   players : Player.t list;
   time : int;
+  gaia : Gaia.t;
 }
 
 val init : Board.t -> Player.t list -> t
+val init_with_gaia : Board.t -> Player.t list -> Gaia.t -> t
 val step : int -> t -> t
 
 (** [is_done state] checks if all players are dead *)
