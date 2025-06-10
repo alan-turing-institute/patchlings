@@ -8,6 +8,7 @@ open Cmdliner.Term.Syntax
 let initialise grid_size n_players =
   Random.self_init ();
   let initial_board = Board.init_with_size (Random.int 10) grid_size in
+  
   (* Create test players with different behaviors *)
   (* Reset name counter to ensure consistent names *)
   Player.reset_name_counter ();
