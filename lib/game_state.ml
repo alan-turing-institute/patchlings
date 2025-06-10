@@ -20,8 +20,8 @@ let resolve_effect (_: int) (board: Board.t) ((player, intent) : Player.t * Inte
   let new_x = ((current_x + delta_x) mod height + height) mod height in
   let new_y = ((current_y + delta_y) mod width + width) mod width in
 
-  (* Player.{alive=player.alive; location=(new_x, new_y)} *)
-  Player.{alive=player.alive; location=(new_x, new_y); behavior=player.behavior; age=player.age; visited_tiles=player.visited_tiles}
+  (* Update player location while preserving all other fields *)
+  { player with Player.location = (new_x, new_y) }
 
 
 (* let get_intent (_: Board.t) (_: Player.t) =
@@ -116,11 +116,10 @@ let string_of_t (state : t) =
       )
     ) in
   let player_statuses_string =
-    List.mapi (fun index player ->
+    List.map (fun player ->
       let status = if player.Player.alive then "alive" else "dead" in
-      let age = player.Player.age in
-      Printf.sprintf "Player %d: %s %s %s %d" (index + 1) (if player.Player.alive then "🧍"
-      else "☠️") (Player.string_of_behavior player.Player.behavior) status age
+      Printf.sprintf "%s: %s %s %s" player.Player.name (if player.Player.alive then "🧍"
+      else "☠️") (Player.string_of_behavior player.Player.behavior) status
     ) state.players
     |> String.concat "\n" in
   let time_string = Printf.sprintf "Time: %d" state.time in
