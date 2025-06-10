@@ -30,5 +30,7 @@ _opam/
 
 *.png
 
+# Python 🐍🤯
 venv
 .venv
+.python-version

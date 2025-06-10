@@ -1,4 +1,4 @@
-type behavior =
+type behavior = 
   | RandomWalk
   | CautiousWalk
   | Stationary

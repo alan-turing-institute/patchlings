@@ -7,7 +7,7 @@ plt.figure(figsize=(10, 6))
 
 # Data for RandomWalk
 times_RandomWalk = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-ages_RandomWalk = [1, 2, 3, 4, 5, 6, 7, 0, 0]
+ages_RandomWalk = [1, 2, 3, 4, 5, 0, 0, 0, 0]
 plt.plot(times_RandomWalk, ages_RandomWalk, label='RandomWalk', linewidth=2)
 
 # Data for CautiousWalk
