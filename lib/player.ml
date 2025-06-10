@@ -3,10 +3,17 @@ type behavior =
   | CautiousWalk
   | Stationary
 
+module PositionSet = Set.Make(struct
+  type t = int * int
+  let compare = compare
+end)
+
 type t = {
   alive : bool;
   location : int * int;
   behavior : behavior;
+  age : int;
+  visited_tiles : PositionSet.t;
 }
 
 let string_of_behavior (b: behavior) =
@@ -15,12 +22,26 @@ let string_of_behavior (b: behavior) =
   | CautiousWalk -> "cautious walk"
   | Stationary -> "stationary"
 
-let init (location: int * int) (behavior: behavior) = {alive=true; location; behavior}
+let init (location: int * int) (behavior: behavior) = 
+  {
+    alive = true; 
+    location; 
+    behavior;
+    age = 0;
+    visited_tiles = PositionSet.singleton location;
+  }
+
+let update_stats player =
+  { player with 
+    age = player.age + 1;
+    visited_tiles = PositionSet.add player.location player.visited_tiles;
+  }
 
 let step (_: int) (board: Board.t) player =
+  let updated_player = update_stats player in
   match Board.get_cell board player.location with
-  | Board.Bad -> { player with alive = false }
-  | Board.Good -> player
+  | Board.Bad -> { updated_player with alive = false }
+  | Board.Good -> updated_player
 
 (* Get the cell state in a given direction from player's position, with wrapping *)
 let get_cell_in_direction (board: Board.t) (player_pos: int * int) (direction: Intent.t) =
