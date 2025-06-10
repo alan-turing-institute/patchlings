@@ -9,7 +9,9 @@ let () =
   Random.self_init ();
 
   (* Initialize game state with a board and some test players *)
-  let initial_board = Board.init (Random.int 10) in
+  (* Use different grid sizes to demonstrate terrain grouping *)
+  let grid_size = 2 in  (* Try changing this to 1, 2, or 3 to see different effects *)
+  let initial_board = Board.init_with_size (Random.int 10) grid_size in
   
   (* Create test players with different behaviors *)
   let test_players = [
