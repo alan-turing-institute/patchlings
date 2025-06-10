@@ -105,3 +105,65 @@ let save_plots state =
   } in
   Plotting.create_line_plot simulation_data "player_ages_over_time.dat";
   Plotting.create_bar_plot simulation_data "player_unique_tiles.dat"
+
+let export_grid_for_gui state filename =
+  let oc = open_out filename in
+  let board = state.board in
+  let (board_height, board_width) = Board.dimensions board in
+  
+  (* Count players at each position *)
+  let player_counts = 
+    List.fold_left (fun acc player ->
+      if player.Player.alive then
+        let (x, y) = player.Player.location in
+        if x >= 0 && x < board_height && y >= 0 && y < board_width then
+          let pos = (x, y) in
+          let current_count = try List.assoc pos acc with Not_found -> 0 in
+          (pos, current_count + 1) :: (List.remove_assoc pos acc)
+        else
+          acc
+      else
+        acc
+    ) [] state.players
+  in
+  
+  Printf.fprintf oc "%d %d %d\n" board_height board_width state.time;
+  
+  (* Export grid with player overlays *)
+  for i = 0 to board_height - 1 do
+    for j = 0 to board_width - 1 do
+      let pos = (i, j) in
+      let player_count = try List.assoc pos player_counts with Not_found -> 0 in
+      
+      if player_count > 1 then
+        Printf.fprintf oc "👥"
+      else if player_count = 1 then
+        Printf.fprintf oc "🧍"
+      else
+        let cell = Board.get_cell board (i, j) in
+        Printf.fprintf oc "%s" (match cell with
+                      | Board.Good -> "🌱"
+                      | Board.Bad -> "🔥")
+    done;
+    Printf.fprintf oc "\n";
+  done;
+  close_out oc
+
+let check_control_file () =
+  let control_file = "control.txt" in
+  if Sys.file_exists control_file then
+    try
+      let ic = open_in control_file in
+      let command = input_line ic in
+      close_in ic;
+      Some (String.trim command)
+    with
+    | _ -> None
+  else
+    None
+
+let write_status status =
+  let status_file = "simulation_status.txt" in
+  let oc = open_out status_file in
+  Printf.fprintf oc "%s\n" status;
+  close_out oc

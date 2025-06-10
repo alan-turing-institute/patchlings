@@ -33,7 +33,8 @@ let () =
   
   Printf.printf "Checking dependencies...\n";
   check_python_dependencies ();
-  Printf.printf "\n";
+  Printf.printf "✓ Dependencies check passed\n";
+  Printf.printf "Running in controlled mode (waiting for start signal)...\n\n";
   
   Random.self_init ();
 
@@ -54,23 +55,68 @@ let () =
 
   let max_iterations = 10 in
 
-  let rec game_loop iteration state =
-    (* Clear the screen *)
-    print_string "\027[2J\027[H";
-    flush stdout;
+  let rec wait_for_start () =
+    match Game_state.check_control_file () with
+    | Some "START" -> 
+      Game_state.write_status "RUNNING";
+      Printf.printf "Simulation started\n";
+      flush stdout
+    | Some "STOP" ->
+      Game_state.write_status "STOPPED";
+      Printf.printf "Simulation stopped\n";
+      exit 0
+    | _ ->
+      Game_state.write_status "WAITING";
+      Unix.sleepf 0.1;
+      wait_for_start ()
+  in
 
+  let rec wait_for_resume state iteration =
+    match Game_state.check_control_file () with
+    | Some "START" ->
+      Game_state.write_status "RUNNING";
+      Printf.printf "Simulation resumed\n";
+      flush stdout;
+      game_loop iteration state
+    | Some "STOP" ->
+      Game_state.write_status "STOPPED";
+      Printf.printf "Simulation stopped\n";
+      Game_state.save_plots state;
+      exit 0
+    | _ ->
+      Unix.sleepf 0.1;
+      wait_for_resume state iteration
+
+  and game_loop iteration state =
+    (* Always check for control commands *)
+    (match Game_state.check_control_file () with
+      | Some "PAUSE" ->
+        Game_state.write_status "PAUSED";
+        Printf.printf "Simulation paused\n";
+        flush stdout;
+        wait_for_resume state iteration
+      | Some "STOP" ->
+        Game_state.write_status "STOPPED";
+        Printf.printf "Simulation stopped\n";
+        Game_state.save_plots state;
+        exit 0
+      | _ -> ()
+    );
+
+    (* Export grid data for GUI *)
+    Game_state.export_grid_for_gui state "grid_state.txt";
+    
+    (* Print iteration info to console *)
     Printf.printf "=== Iteration %d / %d ===\n" iteration max_iterations;
-    flush stdout;
-
-    (* Print the current game state *)
-    Game_state.print_with_players state;
     flush stdout;
 
     if is_done state then (
       Printf.printf "\nSimulation complete (all players died)! Saving plots...\n";
+      Game_state.write_status "COMPLETED";
       Game_state.save_plots state
     ) else if iteration >= max_iterations then (
       Printf.printf "\nSimulation complete (max iterations reached)! Saving plots...\n";
+      Game_state.write_status "COMPLETED";
       Game_state.save_plots state
     ) else (
       (* Handle players and events *)
@@ -81,9 +127,12 @@ let () =
       let seed = Random.int 1000 in
       let new_state = Game_state.step seed state in
 
-      Unix.sleepf 0.1;
+      Unix.sleepf 0.5;
       game_loop (iteration + 1) new_state
     )
   in
 
+  (* Wait for GUI to start the simulation *)
+  wait_for_start ();
+  
   game_loop 1 initial_state

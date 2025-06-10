@@ -15,3 +15,6 @@ val print : t -> unit
 val print_with_players : t -> unit
 val resolve_effect : int -> Board.t -> Player.t * Intent.t -> Player.t
 val save_plots : t -> unit
+val export_grid_for_gui : t -> string -> unit
+val check_control_file : unit -> string option
+val write_status : string -> unit

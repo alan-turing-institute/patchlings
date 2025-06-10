@@ -4,7 +4,8 @@
       "Bash(mkdir:*)",
       "Bash(mv:*)",
       "Bash(true)",
-      "Bash(timeout 5 dune exec:*)"
+      "Bash(timeout 5 dune exec:*)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }

@@ -25,10 +25,11 @@ Patchlings 2 is a multi-agent simulation where players with different behaviors 
 - Core library
 - utop (for development)
 
-### Python Dependencies (for plotting)
+### Python Dependencies (for plotting and GUI)
 - Python 3.x
 - matplotlib
-- numpy
+- numpy  
+- tkinter (usually included with Python)
 
 ## Installation
 
@@ -49,21 +50,44 @@ Patchlings 2 is a multi-agent simulation where players with different behaviors 
 
 ## Usage
 
-Run the simulation:
+### Terminal Mode (default)
+Run the simulation in the terminal:
 ```bash
 dune exec patchlings
 ```
 
+### GUI Mode
+Run the simulation with a graphical interface:
+```bash
+dune exec patchlings -- --gui
+```
+
+### Standalone GUI
+You can also run the GUI independently and control the simulation from within:
+```bash
+python3 scripts/gui_display.py
+```
+
+#### GUI Controls:
+- **Start**: Begin a new simulation
+- **Pause/Resume**: Pause or resume the current simulation
+- **Stop**: Stop the current simulation
+- **Make Plots**: Generate statistical plots from the current simulation data
+
 The simulation will:
-1. Display the grid world with emoji representation
-2. Show players moving with their respective behaviors
-3. Generate plots when the simulation completes (after 10 iterations or all players die)
+1. **Terminal mode**: Display the grid world with emoji representation in the terminal
+2. **GUI mode**: Open a real-time graphical window showing the simulation with full controls
+3. Show players moving with their respective behaviors  
+4. Display iteration counter and real-time status updates
+5. Generate plots when the simulation completes (after 10 iterations or all players die)
 
 ## Output Files
 
 - `player_ages_over_time.png`: Line plot showing player survival over time
 - `player_unique_tiles.png`: Bar chart showing exploration patterns
 - `scripts/plot_line.py` and `scripts/plot_bar.py`: Generated Python plotting scripts
+- `scripts/gui_display.py`: GUI application for real-time visualization
+- `grid_state.txt`: Real-time grid data (generated in GUI mode)
 
 ## Game Mechanics
 
