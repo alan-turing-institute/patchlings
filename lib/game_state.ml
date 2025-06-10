@@ -53,7 +53,8 @@ let step (seed: int) (state : t) =
   let players = state.players in
   let intents = List.map (Player.get_intent board) players in
   let players' = List.combine players intents |> List.map (resolve_effect seed board) in
-  let board' = Board.step seed board in
+  (* Apply board environmental events *)
+  let board' = Board_events.update_map_events Board_events.default_event_config board in
   let players'' = List.map (Player.step seed board') players' in
   
   { board=board'; players=players''; time=state.time + 1; }
