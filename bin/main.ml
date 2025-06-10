@@ -6,9 +6,11 @@ let () =
   (* Initialize game state with a board and some test players *)
   let initial_board = Board.init (Random.int 1000) in
   
-  (* Create 1 test players at different positions *)
+  (* Create test players with different behaviors *)
   let test_players = [
-    Player.init (1, 1);
+    Player.init (1, 1) Player.RandomWalk;
+    Player.init (2, 3) Player.CautiousWalk;
+    Player.init (3, 2) Player.Stationary;
   ] in
   
   let initial_state = Game_state.init initial_board test_players in

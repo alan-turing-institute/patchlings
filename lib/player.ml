@@ -1,11 +1,55 @@
+type behavior = 
+  | RandomWalk
+  | CautiousWalk
+  | Stationary
+
 type t = {
   alive : bool;
   location : int * int;
+  behavior : behavior;
 }
 
-let init (location: int * int) = {alive=true; location}
+let init (location: int * int) (behavior: behavior) = {alive=true; location; behavior}
 
 let step (_: int) (board: Board.t) player =
   match Board.get_cell board player.location with
   | Board.Bad -> { player with alive = false }
   | Board.Good -> player
+
+(* Get the cell state in a given direction from player's position, with wrapping *)
+let get_cell_in_direction (board: Board.t) (player_pos: int * int) (direction: Intent.t) =
+  let (x, y) = player_pos in
+  let (dx, dy) = Intent.to_delta direction in
+  let (height, width) = Board.dimensions board in
+  
+  let new_x = ((x + dx) mod height + height) mod height in
+  let new_y = ((y + dy) mod width + width) mod width in
+  
+  Board.get_cell board (new_x, new_y)
+
+let get_intent (board: Board.t) (player: t) =
+  match player.behavior with
+  | Stationary -> Intent.Stay
+  
+  | RandomWalk -> 
+    (* Random walk - choose only cardinal directions and Stay *)
+    let directions = [Intent.North; Intent.South; Intent.East; Intent.West; Intent.Stay] in
+    let index = Random.int (List.length directions) in
+    List.nth directions index
+    
+  | CautiousWalk ->
+    (* Try to avoid fire tiles by checking adjacent cells *)
+    let safe_directions = 
+      List.filter (fun direction ->
+        match get_cell_in_direction board player.location direction with
+        | Board.Good -> true
+        | Board.Bad -> false
+      ) [Intent.North; Intent.South; Intent.East; Intent.West]
+    in
+    
+    (* If there are safe directions, pick one randomly; otherwise stay *)
+    if List.length safe_directions > 0 then
+      let index = Random.int (List.length safe_directions) in
+      List.nth safe_directions index
+    else
+      Intent.Stay
