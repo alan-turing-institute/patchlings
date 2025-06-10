@@ -4,14 +4,10 @@ type t = {
   board : Board.t;
   players : Player.t list;
   time : int;
-  histories : Plotting.player_history list;
 }
 
 let init (board: Board.t) (players: Player.t list) : t =
-  let histories = List.mapi (fun i player -> 
-    Plotting.init_history i player.Player.behavior
-  ) players in
-  { board; players; time = 0; histories; }
+  { board; players; time = 0; }
 
 let resolve_effect (_: int) (board: Board.t) ((player, intent) : Player.t * Intent.t) =
   let (delta_x, delta_y) = Intent.to_delta intent in
@@ -48,10 +44,7 @@ let step (seed: int) (state : t) =
   let board' = Board.step seed board in
   let players'' = List.map (Player.step seed board') players' in
   
-  (* Update histories *)
-  let histories' = List.map2 Plotting.update_history players'' state.histories in
-  
-  { board=board'; players=players''; time=state.time + 1; histories=histories'; }
+  { board=board'; players=players''; time=state.time + 1; }
 
 let handle_players state =
   (* For now, do nothing *)
@@ -129,10 +122,3 @@ let print_with_players state =
   state |> string_of_t |> print_endline;
   print_newline ()
 
-let save_plots state =
-  let simulation_data = {
-    Plotting.histories = state.histories;
-    Plotting.max_time = state.time;
-  } in
-  Plotting.create_line_plot simulation_data "player_ages_over_time.dat";
-  Plotting.create_bar_plot simulation_data "player_unique_tiles.dat"

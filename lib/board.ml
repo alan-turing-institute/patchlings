@@ -41,27 +41,102 @@ let step (_: int) (b: t) : t =
   (* ) b *)
   b
 
-(* Function to initialize a board with random states *)
+
+(* Enhanced terrain generation with morphological operations *)
+let count_neighbors_local (board: t) (terrain_type: land_type) (row: int) (col: int) : int =
+  let rows = Array.length board in
+  let cols = if rows > 0 then Array.length board.(0) else 0 in
+  let count = ref 0 in
+  
+  for dr = -1 to 1 do
+    for dc = -1 to 1 do
+      if not (dr = 0 && dc = 0) then (
+        let nr = row + dr in
+        let nc = col + dc in
+        if nr >= 0 && nr < rows && nc >= 0 && nc < cols then (
+          if board.(nr).(nc) = terrain_type then
+            incr count
+        )
+      )
+    done
+  done;
+  !count
+
+
+let dilate_local (board: t) (terrain_type: land_type) : t =
+  let rows = Array.length board in
+  let cols = if rows > 0 then Array.length board.(0) else 0 in
+  let result = Array.make_matrix rows cols Open_land in
+  
+  (* Copy original board *)
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      result.(i).(j) <- board.(i).(j)
+    done
+  done;
+  
+  (* Add terrain where neighbors exist *)
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      if board.(i).(j) = Open_land then (
+        let neighbor_count = count_neighbors_local board terrain_type i j in
+        if neighbor_count >= 1 then
+          result.(i).(j) <- terrain_type
+      )
+    done
+  done;
+  result
+
+
+let seed_terrain_local (board: t) (terrain_type: land_type) (count: int) : t =
+  let rows = Array.length board in
+  let cols = if rows > 0 then Array.length board.(0) else 0 in
+  let result = Array.make_matrix rows cols Open_land in
+  
+  (* Copy original board *)
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      result.(i).(j) <- board.(i).(j)
+    done
+  done;
+  
+  (* Place random seeds *)
+  for _ = 1 to count do
+    let row = Random.int rows in
+    let col = Random.int cols in
+    result.(row).(col) <- terrain_type
+  done;
+  
+  result
+
+let generate_terrain_layer_local (board: t) (terrain_type: land_type) (seed_count: int) : t =
+  board
+  |> fun b -> seed_terrain_local b terrain_type seed_count
+  |> fun b -> dilate_local b terrain_type  (* Just one dilation to grow the seeds slightly *)
+
+(* Function to initialize a board with enhanced terrain generation *)
 let init (r: int) : t =
-  (* Set dimensions for the board, e.g., 5x5 *)
+  (* Set dimensions for the board *)
   let rows = 32 in
   let cols = 32 in
-  (* Initialize Random seed *)
   Random.init r;
-  Array.init rows (fun _ ->
-    Array.init cols (fun _ ->
-      (* if Random.float 1.0 > 0.2 then Good else Bad *)
-      let r = Random.float 1.0 in
-      if r < 0.3 then
-        Ocean
-      else if r < 0.6 then
-        Open_land
-      else if r < 0.9 then
-        Forest
-      else
-        Lava
-    )
-  )
+  
+  (* Start with all Open_land (grassland) *)
+  let board = Array.make_matrix rows cols Open_land in
+  
+  (* Layer 1: Ocean/Rivers (8-12 seeds) *)
+  let ocean_seeds = 8 + Random.int 5 in
+  let board = generate_terrain_layer_local board Ocean ocean_seeds in
+  
+  (* Layer 2: Forests (15-20 seeds) *)
+  let forest_seeds = 15 + Random.int 6 in  
+  let board = generate_terrain_layer_local board Forest forest_seeds in
+  
+  (* Layer 3: Lava (3-5 seeds) *)
+  let lava_seeds = 3 + Random.int 3 in
+  let board = generate_terrain_layer_local board Lava lava_seeds in
+  
+  board
 
 (* Function to print the board *)
 let print (b: t) : unit =

@@ -7,7 +7,7 @@ plt.figure(figsize=(10, 6))
 
 # Data
 behaviors = ['RandomWalk', 'CautiousWalk', 'Stationary']
-tile_counts = [5, 3, 1]
+tile_counts = [9, 9, 1]
 x_pos = np.arange(len(behaviors))
 
 # Create bar chart
