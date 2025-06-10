@@ -15,21 +15,21 @@ let default_event_config = {
   forest_growth_chance = 5;
   volcano_spawn_chance = 1;
   volcano_clear_chance = 5;
-  ocean_spread_chance = 5;
+  ocean_spread_chance = 2;
 }
 
 (* Helper function to get adjacent open land positions *)
 let get_adjacent_open_positions (board: Board.t) (row: int) (col: int) : (int * int) list =
   let rows, cols = Board.dimensions board in
   let positions = ref [] in
-  
+
   (* Check all 8 adjacent positions *)
   for dr = -1 to 1 do
     for dc = -1 to 1 do
       if not (dr = 0 && dc = 0) then (
         let nr = row + dr in
         let nc = col + dc in
-        if nr >= 0 && nr < rows && nc >= 0 && nc < cols && 
+        if nr >= 0 && nr < rows && nc >= 0 && nc < cols &&
            Board.get_cell board (nr, nc) = Open_land then
           positions := (nr, nc) :: !positions
       )
@@ -40,7 +40,7 @@ let get_adjacent_open_positions (board: Board.t) (row: int) (col: int) : (int * 
 (* Helper function to check if a position has adjacent ocean *)
 let has_adjacent_ocean (board: Board.t) (row: int) (col: int) : bool =
   let rows, cols = Board.dimensions board in
-  
+
   (* Check all 8 adjacent positions *)
   let rec check_positions positions =
     match positions with
@@ -48,13 +48,13 @@ let has_adjacent_ocean (board: Board.t) (row: int) (col: int) : bool =
     | (dr, dc) :: rest ->
         let nr = row + dr in
         let nc = col + dc in
-        if nr >= 0 && nr < rows && nc >= 0 && nc < cols && 
+        if nr >= 0 && nr < rows && nc >= 0 && nc < cols &&
            Board.get_cell board (nr, nc) = Ocean then
           true
         else
           check_positions rest
   in
-  
+
   let deltas = [(-1, -1); (-1, 0); (-1, 1); (0, -1); (0, 1); (1, -1); (1, 0); (1, 1)] in
   check_positions deltas
 
@@ -73,11 +73,11 @@ let copy_board (board: Board.t) : Board.t =
 let process_forest_death (config: event_config) (board: Board.t) : Board.t =
   let rows, cols = Board.dimensions board in
   let result = copy_board board in
-  
+
   (* Process forest death *)
   for i = 0 to rows - 1 do
     for j = 0 to cols - 1 do
-      if Board.get_cell board (i, j) = Forest && 
+      if Board.get_cell board (i, j) = Forest &&
          Random.int 100 < config.forest_death_chance then
         Board.set_cell result (i, j) Open_land
     done
@@ -88,7 +88,7 @@ let process_forest_death (config: event_config) (board: Board.t) : Board.t =
 let process_volcano_events (config: event_config) (board: Board.t) : Board.t =
   let rows, cols = Board.dimensions board in
   let result = copy_board board in
-  
+
   (* Process volcano events *)
   for i = 0 to rows - 1 do
     for j = 0 to cols - 1 do
@@ -113,11 +113,11 @@ let process_volcano_events (config: event_config) (board: Board.t) : Board.t =
 let process_ocean_spread (config: event_config) (board: Board.t) : Board.t =
   let rows, cols = Board.dimensions board in
   let result = copy_board board in
-  
+
   (* Check each open land that's adjacent to ocean *)
   for i = 0 to rows - 1 do
     for j = 0 to cols - 1 do
-      if Board.get_cell board (i, j) = Open_land && 
+      if Board.get_cell board (i, j) = Open_land &&
          has_adjacent_ocean board i j &&
          Random.int 100 < config.ocean_spread_chance then
         Board.set_cell result (i, j) Ocean
@@ -129,7 +129,7 @@ let process_ocean_spread (config: event_config) (board: Board.t) : Board.t =
 let process_forest_growth (config: event_config) (board: Board.t) : Board.t =
   let rows, cols = Board.dimensions board in
   let result = copy_board board in
-  
+
   (* Check each forest for growth opportunity *)
   for i = 0 to rows - 1 do
     for j = 0 to cols - 1 do
