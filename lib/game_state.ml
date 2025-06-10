@@ -4,10 +4,14 @@ type t = {
   board : Board.t;
   players : Player.t list;
   time : int;
+  gaia : Gaia.t;
 }
 
+let init_with_gaia (board: Board.t) (players: Player.t list) (gaia: Gaia.t) : t =
+  { board; players; time = 0; gaia; }
+
 let init (board: Board.t) (players: Player.t list) : t =
-  { board; players; time = 0; }
+  init_with_gaia board players (Gaia.create Gaia.default_targets)
 
 let resolve_effect (_: int) (board: Board.t) ((player, intent) : Player.t * Intent.t) =
   let (delta_x, delta_y) = Intent.to_delta intent in
@@ -53,11 +57,12 @@ let step (seed: int) (state : t) =
   let players = state.players in
   let intents = List.map (Player.get_intent board) players in
   let players' = List.combine players intents |> List.map (resolve_effect seed board) in
-  (* Apply board environmental events *)
-  let board' = Board_events.update_map_events Board_events.default_event_config board in
+  (* Apply board environmental events using Gaia's balanced configuration *)
+  let gaia_config = Gaia.get_adjusted_config state.gaia board in
+  let board' = Board_events.update_map_events gaia_config board in
   let players'' = List.map (Player.step seed board') players' in
   
-  { board=board'; players=players''; time=state.time + 1; }
+  { board=board'; players=players''; gaia=state.gaia; time=state.time + 1; }
 
 let is_done (state: t) =
   List.for_all (fun player -> not player.Player.alive) state.players
@@ -123,7 +128,8 @@ let string_of_t (state : t) =
     ) state.players
     |> String.concat "\n" in
   let time_string = Printf.sprintf "Time: %d" state.time in
-  String.concat "\n" [board_string; player_statuses_string; time_string]
+  let gaia_status = Gaia.status_report state.gaia state.board in
+  String.concat "\n" [board_string; player_statuses_string; time_string; ""; gaia_status]
 
 let print_with_players state =
   print_newline ();
