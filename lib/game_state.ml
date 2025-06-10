@@ -35,3 +35,36 @@ let handle_events state =
 
 let print state = 
   Board.print state.board
+
+let print_with_players state =
+  print_newline ();
+  let board = state.board in
+  let (board_height, board_width) = Board.dimensions board in
+  
+  (* Create a set of player positions for quick lookup *)
+  let player_positions = 
+    List.fold_left (fun acc player ->
+      if player.Player.alive then
+        let (x, y) = player.Player.location in
+        if x >= 0 && x < board_height && y >= 0 && y < board_width then
+          (x, y) :: acc
+        else
+          acc
+      else
+        acc
+    ) [] state.players
+  in
+  
+  (* Print board with players overlaid *)
+  for i = 0 to board_height - 1 do
+    for j = 0 to board_width - 1 do
+      if List.mem (i, j) player_positions then
+        print_string "🧍"
+      else
+        let cell = Board.get_cell board (i, j) in
+        print_string (match cell with
+                      | Board.Good -> "🌱"
+                      | Board.Bad -> "🔥")
+    done;
+    print_newline ()
+  done
