@@ -34,3 +34,6 @@ _opam/
 venv
 .venv
 .python-version
+*.json
+
+*.DS_Store

@@ -33,6 +33,7 @@ let player_to_json (player : Player.t) : t =
       ("behavior", behavior_to_json player.behavior);
       ("age", `Int player.age);
       ("visited_tiles", position_set_to_json player.visited_tiles);
+      ("name", `String player.name);
     ]
 
 (* JSON serialization for board *)
@@ -69,8 +70,13 @@ let game_state_to_json (state : Game_state.t) : t =
       ("time", `Int state.time);
     ]
 
+(* Ensure directory exists *)
+let ensure_directory_exists (path : string) : unit =
+  if not (Sys.file_exists path) then Unix.mkdir path 0o755
+
 (* Save game state as JSON to file *)
 let save_game_state_json (state : Game_state.t) (filename : string) : unit =
+  ensure_directory_exists "data";
   let json = game_state_to_json state in
   let json_string = pretty_to_string json in
   let out_channel = open_out filename in
@@ -80,6 +86,7 @@ let save_game_state_json (state : Game_state.t) (filename : string) : unit =
 (* Save game history as JSON array to file *)
 let save_game_history_json (history : Game_state.t list) (filename : string) :
     unit =
+  ensure_directory_exists "data";
   let json_history = `List (List.map game_state_to_json history) in
   let json_string = pretty_to_string json_history in
   let out_channel = open_out filename in
