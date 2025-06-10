@@ -1,4 +1,4 @@
 (executable
  (public_name patchlings)
  (name main)
- (libraries patchlings unix cmdliner minttea))
+ (libraries patchlings unix cmdliner minttea spices leaves))

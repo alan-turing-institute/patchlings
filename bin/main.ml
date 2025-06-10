@@ -24,8 +24,9 @@ let initialise grid_size n_players =
     let y = Random.int board_width in
     let terrain = Board.get_cell initial_board (x, y) in
     match terrain with
-    | Board.Open_land | Board.Forest -> (x, y)  (* Safe positions *)
-    | Board.Ocean | Board.Lava | Board.Out_of_bounds -> find_safe_position ()  (* Try again *)
+    | Board.Open_land | Board.Forest -> (x, y) (* Safe positions *)
+    | Board.Ocean | Board.Lava | Board.Out_of_bounds ->
+        find_safe_position () (* Try again *)
   in
 
   let test_players =
@@ -96,10 +97,55 @@ let to_terminal grid_size n_players max_iterations =
   Printf.printf "Game data saved to %s and %s\n" history_filename
     snapshot_filename
 
+(* TUI code *)
+
+type tui_state = {
+  game_state : Game_state.t;
+  current_iter : int;
+}
+
 let run_tui grid_size n_players max_iterations =
-  let initial_state = initialise grid_size n_players in
-  let _game_history = trajectory initial_state |> Seq.take max_iterations in
-  print_endline "\nTUI mode is not implemented yet"
+  let open Minttea in
+  (* let open Leaves in *)
+  let info_style =
+    Spices.(default |> faint true |> fg (color "245") |> build)
+  in
+
+  let initial_grid_state = initialise grid_size n_players in
+  let initial_model = { game_state = initial_grid_state; current_iter = 0 } in
+
+  let init _model = Command.Noop in
+  let update event model =
+    match event with
+    | Event.KeyDown (Key "q") -> (model, Command.Quit)
+    | Event.KeyDown (Right | Key "n") ->
+        if model.current_iter >= max_iterations then (
+          print_endline "Maximum iterations reached!";
+          (model, Command.Quit))
+        else
+          let seed = Random.int 1000 in
+          let new_game_state = Game_state.step seed model.game_state in
+          let new_model =
+            {
+              game_state = new_game_state;
+              current_iter = model.current_iter + 1;
+            }
+          in
+          (new_model, Command.Noop)
+    | Event.KeyDown (Left | Key "p") ->
+        print_endline "Previous iteration (not implemented)";
+        (model, Command.Noop)
+    | _ -> (model, Command.Noop)
+  in
+  let view model =
+    let info =
+      info_style "=== Iteration %d / %d === (->/n=next, q=quit)"
+        model.current_iter max_iterations
+    in
+    Format.sprintf "%s\n%s" (Game_state.string_of_t model.game_state) info
+  in
+  let app = Minttea.app ~init ~update ~view () in
+  Minttea.start app ~initial_model
 
 (* Command-line interface *)
 
