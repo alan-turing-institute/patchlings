@@ -1,27 +1,12 @@
 open Patchlings
+open Cmdliner
+open Cmdliner.Term.Syntax
 
-(* Generate a stream of game states, starting from an initial state, and
-   proceeding until the game is done. The resulting trajectory does *not*
-   include the initial state. *)
-let trajectory (initial_state : Game_state.t) : Game_state.t Seq.t =
-  let unfold_step state =
-    if Game_state.is_done state then None
-    else
-      let seed = Random.int 1000 in
-      let new_state = Game_state.step seed state in
-      Some (new_state, new_state)
-  in
-  Seq.unfold unfold_step initial_state
-let () =
-  Printf.printf "Patchlings 2 - Multi-Agent Simulation\n";
-  Printf.printf "====================================\n\n";
-
+(* Initialize game state with a board and some test players *)
+(* Use different grid sizes to demonstrate terrain grouping *)
+(* Try changing this to 1, 2, or 3 to see different effects *)
+let initialise grid_size n_players =
   Random.self_init ();
-
-  (* Initialize game state with a board and some test players *)
-  (* Use different grid sizes to demonstrate terrain grouping *)
-  let grid_size = 2 in
-  (* Try changing this to 1, 2, or 3 to see different effects *)
   let initial_board = Board.init_with_size (Random.int 10) grid_size in
   
   (* Create test players with different behaviors *)
@@ -45,7 +30,7 @@ let () =
   in
 
   let test_players =
-    List.init 20 (fun _ ->
+    List.init n_players (fun _ ->
         (* Find a safe spawn position *)
         let x, y = find_safe_position () in
         (* Random behavior *)
@@ -54,13 +39,27 @@ let () =
         in
         Player.init (x, y) behavior)
   in
+  Game_state.init initial_board test_players
 
-  let initial_state = Game_state.init initial_board test_players in
+(* Generate a stream of game states, starting from an initial state, and
+   proceeding until the game is done. The resulting trajectory does *not*
+   include the initial state. *)
+let trajectory (initial_state : Game_state.t) : Game_state.t Seq.t =
+  let unfold_step state =
+    if Game_state.is_done state then None
+    else
+      let seed = Random.int 1000 in
+      let new_state = Game_state.step seed state in
+      Some (new_state, new_state)
+  in
+  Seq.unfold unfold_step initial_state
 
-  print_endline "=== Initial state ===";
-  Game_state.print_with_players initial_state;
+(* Run non-interactively, printing output to terminal *)
+let to_terminal grid_size n_players max_iterations =
+  Printf.printf "Patchlings 2 - Multi-Agent Simulation\n";
+  Printf.printf "====================================\n\n";
 
-  let max_iterations = 10000 in
+  let initial_state = initialise grid_size n_players in
   let game_history = trajectory initial_state |> Seq.take max_iterations in
 
   print_string "\027[2J\027[H";
@@ -97,3 +96,39 @@ let () =
   Json_export.save_game_state_json final_state snapshot_filename;
   Printf.printf "Game data saved to %s and %s\n" history_filename
     snapshot_filename
+
+let run_tui grid_size n_players max_iterations =
+  let initial_state = initialise grid_size n_players in
+  let _game_history = trajectory initial_state |> Seq.take max_iterations in
+  print_endline "\nTUI mode is not implemented yet"
+
+(* Command-line interface *)
+
+let grid_size =
+  let doc = "Set grid size for simulation (affects terrain grouping)" in
+  Arg.(value & opt int 2 & info [ "g"; "grid-size" ] ~doc)
+
+let num_players =
+  let doc = "Set number of players in simulation" in
+  Arg.(value & opt int 20 & info [ "p"; "num-players" ] ~doc)
+
+let max_iters =
+  let doc = "Set maximum number of iterations in simulation" in
+  Arg.(value & opt int 100 & info [ "i"; "max-iters" ] ~doc)
+
+let use_tui =
+  let doc = "Use TUI interface" in
+  Arg.(value & flag & info [ "tui" ] ~doc)
+
+let main_cmd =
+  let doc = "Run the simulation in non-interactive terminal mode" in
+  Cmd.v (Cmd.info "patchlings" ~doc)
+  @@
+  let+ max_iters = max_iters
+  and+ tui = use_tui
+  and+ grid_size = grid_size
+  and+ n_players = num_players in
+  if tui then run_tui grid_size n_players max_iters
+  else to_terminal grid_size n_players max_iters
+
+let () = exit (Cmd.eval main_cmd)
