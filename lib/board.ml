@@ -8,11 +8,12 @@ type land_type =
 let land_type_to_str (lt: land_type) : string =
   (match lt with
     | Ocean -> "🌊"
-    | Forest -> "🌳"
+    | Forest -> "🌲"
     | Lava -> "🌋"
-    | Open_land -> "🌾"
+    | Open_land -> "🌱"
     | Out_of_bounds -> "⛔️"
   )
+
 
 type cell_state =
   | Bad
@@ -29,17 +30,134 @@ let land_type_to_cell_state (lt: land_type) : cell_state =
 
 type t = land_type array array
 
+(* Helper function to get adjacent open land positions *)
+let get_adjacent_open_positions (board: t) (row: int) (col: int) : (int * int) list =
+  let rows = Array.length board in
+  let cols = if rows > 0 then Array.length board.(0) else 0 in
+  let positions = ref [] in
+  
+  (* Check all 8 adjacent positions *)
+  for dr = -1 to 1 do
+    for dc = -1 to 1 do
+      if not (dr = 0 && dc = 0) then (
+        let nr = row + dr in
+        let nc = col + dc in
+        if nr >= 0 && nr < rows && nc >= 0 && nc < cols && board.(nr).(nc) = Open_land then
+          positions := (nr, nc) :: !positions
+      )
+    done
+  done;
+  !positions
+
+(* Process environment events for a single cell *)
+let process_cell_event (board: t) (row: int) (col: int) : land_type =
+  let current = board.(row).(col) in
+  match current with
+  | Forest ->
+      (* Forest can die with 5% chance *)
+      if Random.int 100 < 5 then Open_land else current
+  | Lava ->
+      (* Volcano can turn into open space with 5% chance *)
+      if Random.int 100 < 5 then Open_land else current
+  | Ocean | Open_land | Out_of_bounds ->
+      (* Any non-forest/lava tile has 1% chance to become volcano *)
+      if current <> Out_of_bounds && Random.int 100 < 1 then Lava else current
+
+(* Helper function to check if a position has adjacent ocean *)
+let has_adjacent_ocean (board: t) (row: int) (col: int) : bool =
+  let rows = Array.length board in
+  let cols = if rows > 0 then Array.length board.(0) else 0 in
+  
+  (* Check all 8 adjacent positions *)
+  let rec check_positions positions =
+    match positions with
+    | [] -> false
+    | (dr, dc) :: rest ->
+        let nr = row + dr in
+        let nc = col + dc in
+        if nr >= 0 && nr < rows && nc >= 0 && nc < cols && board.(nr).(nc) = Ocean then
+          true
+        else
+          check_positions rest
+  in
+  
+  let deltas = [(-1, -1); (-1, 0); (-1, 1); (0, -1); (0, 1); (1, -1); (1, 0); (1, 1)] in
+  check_positions deltas
+
+(* Process ocean spreading - only to adjacent open spaces connected to existing oceans *)
+let process_ocean_spread (board: t) : t =
+  let rows = Array.length board in
+  let cols = if rows > 0 then Array.length board.(0) else 0 in
+  let result = Array.make_matrix rows cols Open_land in
+  
+  (* Copy current board *)
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      result.(i).(j) <- board.(i).(j)
+    done
+  done;
+  
+  (* Check each open land that's adjacent to ocean *)
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      if board.(i).(j) = Open_land && has_adjacent_ocean board i j then (
+        (* 5% chance to become ocean if adjacent to ocean *)
+        if Random.int 100 < 5 then
+          result.(i).(j) <- Ocean
+      )
+    done
+  done;
+  result
+
+(* Process forest growth separately to avoid conflicts *)
+let process_forest_growth (board: t) : t =
+  let rows = Array.length board in
+  let cols = if rows > 0 then Array.length board.(0) else 0 in
+  let result = Array.make_matrix rows cols Open_land in
+  
+  (* Copy current board *)
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      result.(i).(j) <- board.(i).(j)
+    done
+  done;
+  
+  (* Check each forest for growth opportunity *)
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      if board.(i).(j) = Forest then (
+        (* 5% chance to grow to an adjacent open space *)
+        if Random.int 100 < 5 then (
+          let open_positions = get_adjacent_open_positions board i j in
+          if List.length open_positions > 0 then (
+            let index = Random.int (List.length open_positions) in
+            let (grow_row, grow_col) = List.nth open_positions index in
+            result.(grow_row).(grow_col) <- Forest
+          )
+        )
+      )
+    done
+  done;
+  result
+
 (* Function to advance the state of the board *)
-let step (_: int) (b: t) : t =
-  (* A simple example implementation where we toggle each cell state.
-     The random number is not used here for simplicity. *)
-  (* Array.map (fun row -> *)
-  (*   Array.map (function *)
-  (*     | Good -> Bad *)
-  (*     | Bad -> Good *)
-  (*   ) row *)
-  (* ) b *)
-  b
+let step (seed: int) (b: t) : t =
+  Random.init seed;
+  let rows = Array.length b in
+  let cols = if rows > 0 then Array.length b.(0) else 0 in
+  
+  (* First, process all cell events (death, volcano spawning, etc.) *)
+  let after_events = Array.init rows (fun i ->
+    Array.init cols (fun j ->
+      process_cell_event b i j
+    )
+  ) in
+  
+  (* Process ocean spreading *)
+  let after_ocean = process_ocean_spread after_events in
+  
+  (* Then process forest growth on the updated board *)
+  process_forest_growth after_ocean
 
 
 (* Enhanced terrain generation with morphological operations *)

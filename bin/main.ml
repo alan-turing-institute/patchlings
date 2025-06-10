@@ -32,7 +32,7 @@ let () =
 
   let initial_state = Game_state.init initial_board test_players in
 
-  let max_iterations = 2 in
+  let max_iterations = 200 in
   let game_history = ref [ initial_state ] in
 
   let rec game_loop iteration state =
