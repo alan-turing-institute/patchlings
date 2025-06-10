@@ -18,18 +18,26 @@ let initialise grid_size n_players =
   in
   let board_height, board_width = Board.dimensions initial_board in
 
+  (* Function to find a safe spawn position *)
+  let rec find_safe_position () =
+    let x = Random.int board_height in
+    let y = Random.int board_width in
+    let terrain = Board.get_cell initial_board (x, y) in
+    match terrain with
+    | Board.Open_land | Board.Forest -> (x, y)  (* Safe positions *)
+    | Board.Ocean | Board.Lava | Board.Out_of_bounds -> find_safe_position ()  (* Try again *)
+  in
+
   let test_players =
     List.init n_players (fun _ ->
-        (* Random position on the board *)
-        let x = Random.int board_height in
-        let y = Random.int board_width in
+        (* Find a safe spawn position *)
+        let x, y = find_safe_position () in
         (* Random behavior *)
         let behavior =
           List.nth behaviors (Random.int (List.length behaviors))
         in
         Player.init (x, y) behavior)
   in
-
   Game_state.init initial_board test_players
 
 (* Generate a stream of game states, starting from an initial state, and
@@ -49,11 +57,8 @@ let trajectory (initial_state : Game_state.t) : Game_state.t Seq.t =
 let to_terminal grid_size n_players max_iterations =
   Printf.printf "Patchlings 2 - Multi-Agent Simulation\n";
   Printf.printf "====================================\n\n";
+
   let initial_state = initialise grid_size n_players in
-
-  print_endline "=== Initial state ===";
-  Game_state.print_with_players initial_state;
-
   let game_history = trajectory initial_state |> Seq.take max_iterations in
 
   print_string "\027[2J\027[H";
