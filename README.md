@@ -1,5 +1,33 @@
 # Patchlings 2
 
+```
+brew install opam                 # Install OCaml itself
+opam install . --deps-only -y     # Install project dependencies
+dune build                        # Build the project
+```
+
+Then install Rust and then
+
+```
+cd controller
+cargo build --release
+```
+
+Then run the game with
+
+```
+dune exec patchlings
+```
+
+To see command-line options, use
+
+```
+dune exec patchlings -- --help
+```
+
+
+-------------------------------------------------------------------------
+
 A simulation framework for studying agent behaviors on grid-based environments.
 
 ## Overview
@@ -16,36 +44,6 @@ Patchlings 2 is a multi-agent simulation where players with different behaviors 
 - **Real-time Visualization**: Emoji-based display with player positions
 - **Statistical Analysis**: Automatic generation of survival and exploration plots
 - **Wrapping World**: Players can move through map edges
-
-## Dependencies
-
-### OCaml Dependencies
-- OCaml (tested with recent versions)
-- Dune (>= 3.16)
-- Core library
-- utop (for development)
-
-### Python Dependencies (for plotting)
-- Python 3.x
-- matplotlib
-- numpy
-
-## Installation
-
-1. **Install OCaml dependencies**:
-   ```bash
-   opam install dune core utop
-   ```
-
-2. **Install Python dependencies**:
-   ```bash
-   pip3 install matplotlib numpy
-   ```
-
-3. **Build the project**:
-   ```bash
-   dune build
-   ```
 
 ## Usage
 

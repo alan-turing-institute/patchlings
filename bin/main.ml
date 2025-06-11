@@ -83,6 +83,7 @@ let to_terminal grid_size n_players max_iterations =
         state :: lst)
       [] game_history
   in
+  Runner.terminate runner;
 
   let final_state = List.hd game_history_list_rev in
 
@@ -148,7 +149,7 @@ let run_tui grid_size n_players max_iterations =
       info_style "=== Iteration %d / %d === (->/n=next, q=quit)"
         model.current_iter max_iterations
     in
-    Format.sprintf "%s\n%s" (Game_state.string_of_t model.game_state) info
+    Format.sprintf "\n\n%s\n%s\n" (Game_state.string_of_t model.game_state) info
   in
   let app = Minttea.app ~init ~update ~view () in
   Minttea.start app ~initial_model
