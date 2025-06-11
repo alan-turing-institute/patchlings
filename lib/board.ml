@@ -3,7 +3,6 @@ type land_type =
   | Open_land
   | Forest
   | Lava
-  | Out_of_bounds
 
 let land_type_to_str (lt : land_type) : string =
   match lt with
@@ -11,7 +10,6 @@ let land_type_to_str (lt : land_type) : string =
   | Forest -> "🌲"
   | Lava -> "🌋"
   | Open_land -> "🌱"
-  | Out_of_bounds -> "⛔️"
 
 type cell_state =
   | Bad
@@ -23,7 +21,6 @@ let land_type_to_cell_state (lt : land_type) : cell_state =
   | Forest -> Good
   | Lava -> Bad
   | Open_land -> Good
-  | Out_of_bounds -> Bad
 
 let serialise_land_type (lt : land_type) =
   match lt with
@@ -31,7 +28,6 @@ let serialise_land_type (lt : land_type) =
   | Open_land -> 'P'
   | Forest -> 'F'
   | Lava -> 'L'
-  | Out_of_bounds -> 'X'
 
 type t = land_type array array
 
@@ -320,22 +316,6 @@ let get_cell (board : t) (location : int * int) =
   let y = make_pos ~period:y_mod y_raw mod y_mod in
 
   board.(x).(y)
-
-let observation (board : t) (x : int) (y : int) (size : int) :
-    land_type array array =
-  let half_size = size / 2 in
-  let board_height = Array.length board in
-  let board_width = if board_height > 0 then Array.length board.(0) else 0 in
-
-  Array.init size (fun i ->
-      Array.init size (fun j ->
-          let row = x - half_size + i in
-          let col = y - half_size + j in
-
-          (* Check if coordinates are within board boundaries *)
-          if row >= 0 && row < board_height && col >= 0 && col < board_width
-          then board.(row).(col)
-          else Out_of_bounds (* Out of bounds cells are considered Bad *)))
 
 let dimensions (board : t) : int * int =
   let height = Array.length board in

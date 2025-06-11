@@ -123,8 +123,7 @@ let get_intent (board : Board.t) (player : t) =
             | Board.Open_land -> true
             | Board.Forest -> true
             | Board.Ocean -> false
-            | Board.Lava -> false
-            | Board.Out_of_bounds -> false)
+            | Board.Lava -> false)
           [ Intent.North; Intent.South; Intent.East; Intent.West ]
       in
 

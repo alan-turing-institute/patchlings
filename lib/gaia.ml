@@ -45,9 +45,8 @@ let count_terrain_types board =
   for i = 0 to rows - 1 do
     for j = 0 to cols - 1 do
       let terrain = Board.get_cell board (i, j) in
-      if terrain <> Out_of_bounds then
-        let current = Hashtbl.find counts terrain in
-        Hashtbl.replace counts terrain (current + 1)
+      let current = Hashtbl.find counts terrain in
+      Hashtbl.replace counts terrain (current + 1)
     done
   done;
 
@@ -175,7 +174,6 @@ let status_report gaia board =
       | Forest -> "Forest"
       | Lava -> "Lava"
       | Open_land -> "Open Land"
-      | Out_of_bounds -> "Out of Bounds"
     in
     let current_pct = current *. 100.0 in
     let target_pct = target *. 100.0 in

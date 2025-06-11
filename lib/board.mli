@@ -7,7 +7,6 @@ type land_type =
   | Open_land
   | Forest
   | Lava
-  | Out_of_bounds
 
 val land_type_to_str : land_type -> string
 val land_type_to_cell_state : land_type -> cell_state
@@ -76,10 +75,6 @@ val print_with_emojis : t -> unit
     Uses 🔥 for Bad cells and 🌱 for Good cells. *)
 
 val get_cell : t -> int * int -> land_type
-
-val observation : t -> int -> int -> int -> land_type array array
-(** [observation board x y size] returns a sub-array of size×size centered at (x, y).
-    If the observation window extends beyond the board boundaries, those cells are filled with Bad. *)
 
 val dimensions : t -> int * int
 (** [dimensions board] returns (height, width) of the board *)

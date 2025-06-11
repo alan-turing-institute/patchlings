@@ -27,7 +27,7 @@ let initialise grid_size n_players =
     let terrain = Board.get_cell initial_board (x, y) in
     match terrain with
     | Board.Open_land | Board.Forest -> (x, y) (* Safe positions *)
-    | Board.Ocean | Board.Lava | Board.Out_of_bounds ->
+    | Board.Ocean | Board.Lava ->
         find_safe_position () (* Try again *)
   in
 

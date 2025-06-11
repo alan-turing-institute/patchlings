@@ -7,8 +7,7 @@ let land_type_to_json (lt : Board.land_type) : t =
     | Board.Ocean -> "ocean"
     | Board.Open_land -> "open_land"
     | Board.Forest -> "forest"
-    | Board.Lava -> "lava"
-    | Board.Out_of_bounds -> "out_of_bounds")
+    | Board.Lava -> "lava")
 
 (* JSON serialization for behavior *)
 let behavior_to_json (b : Player.behavior) : t =
