@@ -22,15 +22,15 @@ let to_delta = function
 
 let deserialise_intent (s : string) =
   match s with
-  | "0" -> North
-  | "1" -> Northeast
-  | "2" -> East
-  | "3" -> Southeast
-  | "4" -> South
-  | "5" -> Southwest
-  | "6" -> West
-  | "7" -> Northwest
-  | "8" -> Stay
+  | "N" -> North
+  | "O" -> Northeast
+  | "E" -> East
+  | "F" -> Southeast
+  | "S" -> South
+  | "T" -> Southwest
+  | "W" -> West
+  | "X" -> Northwest
+  | "." -> Stay
   | _ -> Stay (* Default to Stay for unknown input *)
 
 let to_string = function

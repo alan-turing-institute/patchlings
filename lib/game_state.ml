@@ -47,28 +47,27 @@ let resolve_effect (_ : int) (board : Board.t)
 
 (* Functions for external runner support (pipe branch functionality) *)
 let get_player_env (board : Board.t) (player : Player.t) =
-  let steps_1d = [ -1; 0; 1 ] in
-  let steps_2d =
-    List.concat
-      (List.map (fun x -> List.map (fun y -> (x, y)) steps_1d) steps_1d)
-  in
+  (* This variable lists the relative positions around the player in order. The order
+     determines the ordering of the bytes that the Assembly programs see, so please don't
+     change it without consulting others. *)
+  let steps_in_order = [-1,-1; 0,-1; 1,-1; 1,0; 1,1; 0,1; -1,1; -1,0; 0,0;] in
   let loc = player.location in
   List.map
     (fun (step : int * int) ->
       Board.get_cell board (fst loc + fst step, snd loc + snd step))
-    steps_2d
+    steps_in_order
 
 let serialise_env (env : Board.land_type list) =
-  let packed = String.concat "" @@ List.map Board.serialise_land_type env in
-  packed |> Bytes.of_string |> fun b -> Bytes.get_int32_le b 0
+  let c_list = List.map Board.serialise_land_type env in
+  List.to_seq c_list |> Bytes.of_seq
 
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
-  let env_int32s =
+  let env_bytes =
     List.map (fun p -> serialise_env (get_player_env board p)) players
   in
   let to_write =
-    String.cat (String.concat "," (List.map Int32.to_string env_int32s)) ","
+    String.cat (String.concat "," (List.map Bytes.to_string env_bytes)) ","
   in
   print_endline to_write;
   Out_channel.output_string r.out_chan to_write;

@@ -4,3 +4,5 @@ type t = {
 }
 
 val init : unit -> t
+
+val terminate : t -> unit

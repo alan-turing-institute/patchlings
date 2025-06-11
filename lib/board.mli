@@ -84,7 +84,7 @@ val observation : t -> int -> int -> int -> land_type array array
 val dimensions : t -> int * int
 (** [dimensions board] returns (height, width) of the board *)
 
-val serialise_land_type : land_type -> string
+val serialise_land_type : land_type -> char
 
 val init_empty : int -> int -> t
 (** [init_empty rows cols] creates an empty board filled with Open_land *)
