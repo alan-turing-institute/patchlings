@@ -8,6 +8,15 @@ let init () =
   let controller_binary = cwd ^ "/controller/target/release/controller" in
   let asm_path = cwd ^ "/asm" in
   let wrapper_path = cwd ^ "/wrapper" in
+  (* check that controller binary exists *)
+  (if not (Sys.file_exists controller_binary) then
+     let err_msg =
+       "Controller binary not found: " ^ controller_binary
+       ^ ". Please build the controller first using `cd controller; cargo build \
+          --release`."
+     in
+     failwith err_msg);
+
   let process_str =
     String.concat " " [ controller_binary; asm_path; wrapper_path ]
   in
