@@ -22,6 +22,7 @@ module Player = (struct
     visited_tiles : PositionSet.t;
     last_intent : Intent.t option;
     name : string;
+    is_npc : bool;
   }
   let compare a b =
     match compare a.location b.location with
@@ -68,7 +69,7 @@ let string_of_behavior (b : behavior) =
   | Stationary -> "stationary"
   | Bird -> "bird"
 
-let init_with_name (location : int * int) (behavior : behavior) (name : string)
+let init_with_name (location : int * int) (behavior : behavior) (is_npc: bool) (name : string) 
     =
   {
     alive = true;
@@ -78,10 +79,11 @@ let init_with_name (location : int * int) (behavior : behavior) (name : string)
     visited_tiles = PositionSet.singleton location;
     last_intent = None;
     name;
+    is_npc;
   }
 
-let init (location : int * int) (behavior : behavior) =
-  init_with_name location behavior (get_next_name ())
+let init (location : int * int) (behavior : behavior) (is_npc: bool) =
+  init_with_name location behavior is_npc (get_next_name ())
 
 let reset_name_counter () = name_counter := 0
 

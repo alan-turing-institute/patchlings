@@ -14,6 +14,7 @@ type t = {
   visited_tiles : PositionSet.t;
   last_intent : Intent.t option;
   name : string;
+  is_npc : bool;
 }
 
 val init : int * int -> behavior -> t

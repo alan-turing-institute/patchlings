@@ -33,7 +33,7 @@ let resolve_effect (_ : int) (board : Board.t)
     Player.last_intent = Some intent;
   }
   
-val perform_interactions (board : Board.t) (players : Player.t list) =
+(* val perform_interactions (board : Board.t) (players : Player.t list) =
   (* Check if there are any entities in the neighborhood *)
   let coord_player_map = get_player_coordinate_map board in
   let cells_in_neighborhood = get_player_env board new_player in
@@ -42,7 +42,7 @@ val perform_interactions (board : Board.t) (players : Player.t list) =
 val interact_entities (player_1: Player.t) (player_2: player Player.t) =
   (* Placeholder for interaction logic between two players *)
   (* For now, just return both players unchanged *)
-  (player_1, player_2)
+  (player_1, player_2) *)
 
 
 
@@ -96,14 +96,22 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
       String.split_on_char ',' intents |> List.map Intent.deserialise_intent
   | None -> failwith "runner died"
 
+let get_intents_and_players_zip (r : Runner.t) (board : Board.t)
+    (players : Player.t list) =
+    let (npcs, people) = List.partition (fun p -> p.is_npc) players in
+    let people_intents = get_intents_from_manyarms r board people in
+    let npcs_intents = List.map (fun p -> Player.get_intent board p) npcs in
+    let intents = people_intents @ npcs_intents in
+    let all_players = people @ npcs in 
+    List.combine all_players intents
+
 (* Step function with external runner support *)
 let step_with_runner (seed : int) (r : Runner.t) (state : t) =
   let board = state.board in
   let players = state.players in
-  let intents = get_intents_from_manyarms r board players in
-
+  let intents_and_players = get_intents_and_players_zip r board players in
   let players' =
-    List.combine players intents |> List.map (resolve_effect seed board)
+    intents_and_players |> List.map (resolve_effect seed board)
   in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
@@ -124,7 +132,7 @@ let handle_events state =
   (* For now, do nothing *)
   state
 
-let step (seed : int) (state : t) =
+(* let step (seed : int) (state : t) =
   (* Handle players and events *)
   let state = handle_players state in
   let state = handle_events state in
@@ -146,7 +154,7 @@ let step (seed : int) (state : t) =
     players = players'';
     gaia = state.gaia;
     time = state.time + 1;
-  }
+  } *)
 
 let is_done (state : t) =
   List.for_all (fun player -> not player.Player.alive) state.players
