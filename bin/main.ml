@@ -28,6 +28,16 @@ let trajectory initial_state runner : Game_state.t Seq.t =
   in
   Seq.unfold unfold_step initial_state
 
+let skip (iterations : int) initial_state runner : Game_state.t =
+  let rec _skip iterations state =
+    if iterations <= 0 || Game_state.is_done state then state
+    else
+      let seed = Random.int 1000 in
+      let new_state = Game_state.step_with_runner seed runner state in
+      _skip (iterations - 1) new_state
+  in
+  _skip iterations initial_state
+
 (* Run non-interactively, printing output to terminal *)
 let to_terminal grid_size n_players max_iterations =
   Printf.printf "Patchlings 2 - Multi-Agent Simulation\n";
@@ -89,20 +99,25 @@ let run_tui grid_size n_players max_iterations =
 
   let init _model = Command.Noop in
   let update event model =
-    match event with
-    | Event.KeyDown (Key "q") ->
-        Runner.terminate runner;
-        (model, Command.Quit)
-    | Event.KeyDown (Right | Key "n") ->
-        if model.current_iter >= max_iterations then (
-          print_endline "Maximum iterations reached!";
+    if model.current_iter > max_iterations then (
+      Runner.terminate runner;
+      (model, Command.Quit))
+    else
+      match event with
+      | Event.KeyDown (Key "q") ->
           Runner.terminate runner;
-          (model, Command.Quit))
-        else
-          let seed = Random.int 1000 in
-          let new_game_state =
-            Game_state.step_with_runner seed runner model.game_state
+          (model, Command.Quit)
+      | Event.KeyDown (Key "s") ->
+          let new_game_state = skip 5 model.game_state runner in
+          let new_model =
+            {
+              game_state = new_game_state;
+              current_iter = model.current_iter + 5;
+            }
           in
+          (new_model, Command.Noop)
+      | Event.KeyDown (Right | Key "n") ->
+          let new_game_state = skip 1 model.game_state runner in
           let new_model =
             {
               game_state = new_game_state;
@@ -110,11 +125,12 @@ let run_tui grid_size n_players max_iterations =
             }
           in
           (new_model, Command.Noop)
-    | Event.KeyDown (Left | Key "p") ->
-        print_endline "Previous iteration (not implemented)";
-        (model, Command.Noop)
-    | _ -> (model, Command.Noop)
+      | Event.KeyDown (Left | Key "p") ->
+          print_endline "Previous iteration (not implemented)";
+          (model, Command.Noop)
+      | _ -> (model, Command.Noop)
   in
+
   let view model =
     (* Render the game state and player statuses *)
     let board_and_players =
@@ -124,16 +140,23 @@ let run_tui grid_size n_players max_iterations =
       Game_state.table_of_player_statuses model.game_state
     in
     let info =
-      Pretty.(
-        vcat Centre
-          [
-            Pretty.bold
-              (Printf.sprintf "=== Iteration %d / %d ===" model.current_iter
-                 max_iterations);
-            Pretty.fg 93 "->/n: next   q: quit";
-          ])
+      if model.current_iter > max_iterations then
+        Pretty.("Simulation complete :)" |> fg 28 |> bold)
+      else if Game_state.is_done model.game_state then
+        Pretty.("All players have died :(" |> fg 196 |> bold)
+      else
+        Pretty.(
+          vcat Centre
+            [
+              Pretty.bold
+                (Printf.sprintf "=== Iteration %d / %d ===" model.current_iter
+                   max_iterations);
+              Pretty.fg 93 "->/n: next   q: quit";
+              Pretty.fg 93 "   s: skip 5 iters  ";
+            ])
     in
-    Pretty.(vcat Centre [ board_and_players; player_statuses; box info ])
+    Pretty.(
+      vcat Centre [ board_and_players; player_statuses; box ~padding:1 info ])
   in
   let app = Minttea.app ~init ~update ~view () in
   Minttea.start app ~initial_model
