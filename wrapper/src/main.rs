@@ -2,7 +2,7 @@ use std::env;
 use std::process;
 
 extern "C" {
-    fn take_turn(input1: u64, input2: u64) -> u32;
+    fn take_turn(input1: u64, input2: u64) -> u8;
 }
 
 fn main() {
