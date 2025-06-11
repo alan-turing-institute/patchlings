@@ -46,7 +46,7 @@ let initialise grid_size n_players =
 (* Generate a stream of game states, starting from an initial state, and
    proceeding until the game is done. The resulting trajectory does *not*
    include the initial state. *)
-let trajectory (initial_state, runner) : Game_state.t Seq.t =
+let trajectory initial_state runner : Game_state.t Seq.t =
   let unfold_step state =
     if Game_state.is_done state then None
     else
@@ -61,8 +61,10 @@ let to_terminal grid_size n_players max_iterations =
   Printf.printf "Patchlings 2 - Multi-Agent Simulation\n";
   Printf.printf "====================================\n\n";
 
-  let initial_state = initialise grid_size n_players in
-  let game_history = trajectory initial_state |> Seq.take max_iterations in
+  let initial_state, runner = initialise grid_size n_players in
+  let game_history =
+    trajectory initial_state runner |> Seq.take max_iterations
+  in
 
   print_string "\027[2J\027[H";
   let game_history_list_rev =
@@ -113,8 +115,8 @@ let run_tui grid_size n_players max_iterations =
     Spices.(default |> faint true |> fg (color "245") |> build)
   in
 
-  let initial_grid_state, _ = initialise grid_size n_players in
-  let initial_model = { game_state = initial_grid_state; current_iter = 0 } in
+  let initial_state, runner = initialise grid_size n_players in
+  let initial_model = { game_state = initial_state; current_iter = 0 } in
 
   let init _model = Command.Noop in
   let update event model =
@@ -126,8 +128,9 @@ let run_tui grid_size n_players max_iterations =
           (model, Command.Quit))
         else
           let seed = Random.int 1000 in
-
-          let new_game_state = Game_state.step seed model.game_state in
+          let new_game_state =
+            Game_state.step_with_runner seed runner model.game_state
+          in
           let new_model =
             {
               game_state = new_game_state;
