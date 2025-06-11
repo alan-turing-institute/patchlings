@@ -27,7 +27,7 @@ let resolve_effect (_ : int) (board : Board.t)
   let new_y = (((current_y + delta_y) mod width) + width) mod width in
 
   (* Update player location while preserving all other fields *)
-  { player with Player.location = (new_x, new_y) }
+  { player with Player.location = (new_x, new_y); Player.last_intent = Some intent }
 
 (* let get_intent (_: Board.t) (_: Player.t) =
    (* Random walk - choose only cardinal directions (up/down/left/right) and Stay *)
@@ -182,8 +182,12 @@ let string_of_player_statuses (state : t) =
   let compact_statuses =
     List.map
       (fun player ->
-        Printf.sprintf "%s%s" player.Player.name
-          (if player.Player.alive then "🧍" else "☠️"))
+        Printf.sprintf "%s%s %s" player.Player.name
+          (if player.Player.alive then "🧍" else "☠️")
+          (match player.Player.last_intent with
+          | Some intent -> Intent.to_string intent
+          | None -> "No intent")
+      )
       state.players
   in
   (* Helper functions for list manipulation *)
