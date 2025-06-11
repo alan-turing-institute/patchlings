@@ -33,7 +33,7 @@ val resolve_effect : int -> Board.t -> Player.t * Intent.t -> Player.t
 
 (* External runner functions *)
 val get_player_env : Board.t -> Player.t -> Board.land_type list
-val serialise_env : Board.land_type list -> int32
+val serialise_env : Board.land_type list -> bytes
 
 val get_intents_from_manyarms :
   Runner.t -> Board.t -> Player.t list -> Intent.t list

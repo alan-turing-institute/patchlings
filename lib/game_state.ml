@@ -59,16 +59,16 @@ let get_player_env (board : Board.t) (player : Player.t) =
     steps_2d
 
 let serialise_env (env : Board.land_type list) =
-  let packed = String.concat "" @@ List.map Board.serialise_land_type env in
-  packed |> Bytes.of_string |> fun b -> Bytes.get_int32_le b 0
+  let c_list = List.map Board.serialise_land_type env in
+  List.to_seq c_list |> Seq.take 8 |> Bytes.of_seq
 
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
-  let env_int32s =
+  let env_bytes =
     List.map (fun p -> serialise_env (get_player_env board p)) players
   in
   let to_write =
-    String.cat (String.concat "," (List.map Int32.to_string env_int32s)) ","
+    String.cat (String.concat "," (List.map Bytes.to_string env_bytes)) ","
   in
   print_endline to_write;
   Out_channel.output_string r.out_chan to_write;
