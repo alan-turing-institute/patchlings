@@ -12,6 +12,7 @@ module PositionSet = Set.Make (struct
 end)
 
 type t = {
+  id : int;
   alive : bool;
   location : int * int;
   behavior : behavior;
@@ -21,7 +22,7 @@ type t = {
   name : string;
 }
 
-let compare (a : t) (b : t) = compare a.name b.name
+let compare (a : t) (b : t) = compare a.id b.id
 
 let names : string Seq.t =
   let base_names =
@@ -46,7 +47,7 @@ let names : string Seq.t =
       let modifier_string =
         if modifier == 1 then "" else string_of_int modifier
       in
-      Printf.sprintf "%s_%s" base_name modifier_string)
+      Printf.sprintf "%s%s" base_name modifier_string)
     (Seq.ints 0)
 
 let string_of_behavior (b : behavior) =
@@ -61,10 +62,11 @@ let get_random_behaviour (behaviours : behavior list) =
 
 let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
   let names = Seq.take n_players names |> List.of_seq in
-  List.map
-    (fun nm ->
+  List.mapi
+    (fun i nm ->
       let loc = Board.find_safe_position board in
       {
+        id = i;
         alive = true;
         location = loc;
         behavior = get_random_behaviour behaviours;

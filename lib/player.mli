@@ -6,6 +6,7 @@ type behavior =
 module PositionSet : Set.S with type elt = int * int
 
 type t = {
+  id: int;
   alive : bool;
   location : int * int;
   behavior : behavior;
