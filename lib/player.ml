@@ -17,6 +17,7 @@ type t = {
   behavior : behavior;
   age : int;
   visited_tiles : PositionSet.t;
+  last_intent : Intent.t option;
   name : string;
 }
 
@@ -65,6 +66,7 @@ let init_with_name (location : int * int) (behavior : behavior) (name : string)
     behavior;
     age = 0;
     visited_tiles = PositionSet.singleton location;
+    last_intent = None;
     name;
   }
 

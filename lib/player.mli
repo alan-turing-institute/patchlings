@@ -11,6 +11,7 @@ type t = {
   behavior : behavior;
   age : int;
   visited_tiles : PositionSet.t;
+  last_intent : Intent.t option;
   name : string;
 }
 

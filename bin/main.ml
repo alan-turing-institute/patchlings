@@ -8,7 +8,8 @@ open Cmdliner.Term.Syntax
 let initialise grid_size n_players =
   Random.self_init ();
   let initial_board = Board.init_with_size (Random.int 10) grid_size in
-  
+  let runner = Runner.init () in
+
   (* Create test players with different behaviors *)
   (* Reset name counter to ensure consistent names *)
   Player.reset_name_counter ();
@@ -40,17 +41,17 @@ let initialise grid_size n_players =
         in
         Player.init (x, y) behavior)
   in
-  Game_state.init initial_board test_players
+  (Game_state.init initial_board test_players, runner)
 
 (* Generate a stream of game states, starting from an initial state, and
    proceeding until the game is done. The resulting trajectory does *not*
    include the initial state. *)
-let trajectory (initial_state : Game_state.t) : Game_state.t Seq.t =
+let trajectory (initial_state, runner) : Game_state.t Seq.t =
   let unfold_step state =
     if Game_state.is_done state then None
     else
       let seed = Random.int 1000 in
-      let new_state = Game_state.step seed state in
+      let new_state = Game_state.step_with_runner seed runner state in
       Some (new_state, new_state)
   in
   Seq.unfold unfold_step initial_state
@@ -112,7 +113,7 @@ let run_tui grid_size n_players max_iterations =
     Spices.(default |> faint true |> fg (color "245") |> build)
   in
 
-  let initial_grid_state = initialise grid_size n_players in
+  let initial_grid_state, _ = initialise grid_size n_players in
   let initial_model = { game_state = initial_grid_state; current_iter = 0 } in
 
   let init _model = Command.Noop in
@@ -125,6 +126,7 @@ let run_tui grid_size n_players max_iterations =
           (model, Command.Quit))
         else
           let seed = Random.int 1000 in
+
           let new_game_state = Game_state.step seed model.game_state in
           let new_model =
             {

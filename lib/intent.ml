@@ -32,3 +32,14 @@ let deserialise_intent (s : string) =
   | "7" -> Northwest
   | "8" -> Stay
   | _ -> Stay (* Default to Stay for unknown input *)
+
+let to_string = function
+  | North -> "N"
+  | Northeast -> "NE"
+  | East -> "E"
+  | Southeast -> "SE"
+  | South -> "S"
+  | Southwest -> "SW"
+  | West -> "W"
+  | Northwest -> "NW"
+  | Stay -> "Stay"

@@ -27,7 +27,7 @@ let resolve_effect (_ : int) (board : Board.t)
   let new_y = (((current_y + delta_y) mod width) + width) mod width in
 
   (* Update player location while preserving all other fields *)
-  { player with Player.location = (new_x, new_y) }
+  { player with Player.location = (new_x, new_y); Player.last_intent = Some intent }
 
 (* let get_intent (_: Board.t) (_: Player.t) =
    (* Random walk - choose only cardinal directions (up/down/left/right) and Stay *)
@@ -55,14 +55,18 @@ let get_player_env (board : Board.t) (player : Player.t) =
     steps_2d
 
 let serialise_env (env : Board.land_type list) =
-  String.concat "," @@ List.map Board.serialise_land_type env
+  let packed = String.concat "" @@ List.map Board.serialise_land_type env in
+  packed |> Bytes.of_string |> fun b -> Bytes.get_int32_le b 0
 
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
-  let env_strings =
+  let env_int32s =
     List.map (fun p -> serialise_env (get_player_env board p)) players
   in
-  Out_channel.output_string r.out_chan @@ String.concat ";" env_strings;
+  let to_write = String.cat (String.concat "," (List.map Int32.to_string env_int32s)) ","in
+  print_endline to_write;
+  Out_channel.output_string r.out_chan to_write;
+
   Out_channel.output_string r.out_chan "\n";
   Out_channel.flush r.out_chan;
   print_endline "Sent envs to manyarms";
@@ -70,7 +74,7 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
   let maybe_intents = In_channel.input_line r.in_chan in
   match maybe_intents with
   | Some intents ->
-      String.split_on_char ';' intents |> List.map Intent.deserialise_intent
+      String.split_on_char ',' intents |> List.map Intent.deserialise_intent
   | None -> failwith "runner died"
 
 (* Step function with external runner support *)
@@ -78,6 +82,7 @@ let step_with_runner (seed : int) (r : Runner.t) (state : t) =
   let board = state.board in
   let players = state.players in
   let intents = get_intents_from_manyarms r board players in
+
   let players' =
     List.combine players intents |> List.map (resolve_effect seed board)
   in
@@ -177,8 +182,12 @@ let string_of_player_statuses (state : t) =
   let compact_statuses =
     List.map
       (fun player ->
-        Printf.sprintf "%s%s" player.Player.name
-          (if player.Player.alive then "🧍" else "☠️"))
+        Printf.sprintf "%s%s %s" player.Player.name
+          (if player.Player.alive then "🧍" else "☠️")
+          (match player.Player.last_intent with
+          | Some intent -> Intent.to_string intent
+          | None -> "No intent")
+      )
       state.players
   in
   (* Helper functions for list manipulation *)

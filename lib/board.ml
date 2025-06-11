@@ -111,6 +111,7 @@ let count_neighbors_radius (board : t) (terrain_type : land_type) (row : int)
     done
   done;
   !count
+
 let dilate_local (board : t) (terrain_type : land_type) : t =
   let rows = Array.length board in
   let cols = if rows > 0 then Array.length board.(0) else 0 in
@@ -308,10 +309,16 @@ let print_with_emojis (b : t) : unit =
 
 let get_cell (board : t) (location : int * int) =
   let x_raw, y_raw = location in
-  let x = x_raw mod Array.length board in
-  let y =
-    y_raw mod if Array.length board > 0 then Array.length board.(0) else 0
+
+  let x_mod = Array.length board in
+  let y_mod = if Array.length board > 0 then Array.length board.(0) else 0 in
+
+  let rec make_pos ~period x =
+    if x >= 0 then x else make_pos ~period (x + period)
   in
+  let x = make_pos ~period:x_mod x_raw mod x_mod in
+  let y = make_pos ~period:y_mod y_raw mod y_mod in
+
   board.(x).(y)
 
 let observation (board : t) (x : int) (y : int) (size : int) :
