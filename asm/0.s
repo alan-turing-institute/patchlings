@@ -1,5 +1,8 @@
+.data
+actions:
+    .ascii "XWTSFEON"
 
-.section __TEXT,__text
+.text
 .global _take_turn
 .p2align 2
 
@@ -109,8 +112,4 @@ exit:
     ldp x29, x30, [sp], #16
     ret
 
-
-.section __DATA,__data
-actions:
-    .ascii "XWTSFEON"
 
