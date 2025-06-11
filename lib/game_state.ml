@@ -60,7 +60,7 @@ let get_player_env (board : Board.t) (player : Player.t) =
 
 let serialise_env (env : Board.land_type list) =
   let c_list = List.map Board.serialise_land_type env in
-  List.to_seq c_list |> Seq.take 8 |> Bytes.of_seq
+  List.to_seq c_list |> Bytes.of_seq
 
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
