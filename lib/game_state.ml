@@ -32,6 +32,20 @@ let resolve_effect (_ : int) (board : Board.t)
     Player.location = (new_x, new_y);
     Player.last_intent = Some intent;
   }
+  
+val perform_interactions (board : Board.t) (players : Player.t list) =
+  (* Check if there are any entities in the neighborhood *)
+  let coord_player_map = get_player_coordinate_map board in
+  let cells_in_neighborhood = get_player_env board new_player in
+  (* make  *)
+
+val interact_entities (player_1: Player.t) (player_2: player Player.t) =
+  (* Placeholder for interaction logic between two players *)
+  (* For now, just return both players unchanged *)
+  (player_1, player_2)
+
+
+
 
 (* let get_intent (_: Board.t) (_: Player.t) =
    (* Random walk - choose only cardinal directions (up/down/left/right) and Stay *)
@@ -121,6 +135,7 @@ let step (seed : int) (state : t) =
   let players' =
     List.combine players intents |> List.map (resolve_effect seed board)
   in
+  (* Apply interactions between players *)
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
   let board' = Board_events.update_map_events gaia_config board in
@@ -152,18 +167,25 @@ let player_in_bounds (board : Board.t) (player : Player.t) =
   let x, y = player.location in
   x >= 0 && x < height && y >= 0 && y < width
 
-let get_player_positions (state : t) : int CoordinateMap.t =
+module PlayerSet = Set.Make (Player)
+
+(* A map from coordinates to sets of players at those coordinates *)
+let get_player_coordinate_map (state : t) : Player.t CoordinateMap.t =
   List.fold_left
     (fun m player ->
       if player.Player.alive && player_in_bounds state.board player then
-        let updated_count =
+        let updated_players =
           match CoordinateMap.find_opt player.location m with
-          | None -> 1
-          | Some count -> count + 1
+          | None -> PlayerSet.singleton player
+          | Some players -> PlayerSet.add player players
         in
-        CoordinateMap.add player.location updated_count m
+        CoordinateMap.add player.location updated_players m
       else m)
     CoordinateMap.empty state.players
+ 
+let get_player_positions (state : t) : int CoordinateMap.t =
+  let player_map = get_player_coordinate_map state in
+  CoordinateMap.map PlayerSet.length player_map
 
 let string_of_board_and_players (state : t) =
   let board = state.board in
@@ -233,15 +255,4 @@ let print_with_players state =
   state |> string_of_t |> print_endline;
   print_newline ()
 
-let get_player_coordinate_map (state : t) : Player.t CoordinateMap.t =
-  List.fold_left
-    (fun m player ->
-      if player.Player.alive && player_in_bounds state.board player then
-        let updated_players =
-          match CoordinateMap.find_opt player.location m with
-          | None -> PlayerSet.singleton player
-          | Some players -> PlayerSet.add player players
-        in
-        CoordinateMap.add player.location updated_players m
-      else m)
-    CoordinateMap.empty state.players
+

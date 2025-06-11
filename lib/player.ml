@@ -4,6 +4,7 @@ type behavior =
   | RandomWalk
   | CautiousWalk
   | Stationary
+  | Bird
 
 module PositionSet = Set.Make (struct
   type t = int * int
@@ -11,15 +12,22 @@ module PositionSet = Set.Make (struct
   let compare = compare
 end)
 
-type t = {
-  alive : bool;
-  location : int * int;
-  behavior : behavior;
-  age : int;
-  visited_tiles : PositionSet.t;
-  last_intent : Intent.t option;
-  name : string;
-}
+
+module Player = (struct
+  type t = {
+    alive : bool;
+    location : int * int;
+    behavior : behavior;
+    age : int;
+    visited_tiles : PositionSet.t;
+    last_intent : Intent.t option;
+    name : string;
+  }
+  let compare a b =
+    match compare a.location b.location with
+    | 0 -> compare a.name b.name
+    | cmp -> cmp
+end)
 
 (* List of 10 random names for players *)
 let random_names =
@@ -58,6 +66,7 @@ let string_of_behavior (b : behavior) =
   | RandomWalk -> "random walk"
   | CautiousWalk -> "cautious walk"
   | Stationary -> "stationary"
+  | Bird -> "bird"
 
 let init_with_name (location : int * int) (behavior : behavior) (name : string)
     =
@@ -131,3 +140,5 @@ let get_intent (board : Board.t) (player : t) =
         let index = Random.int (List.length safe_directions) in
         List.nth safe_directions index
       else Intent.Stay
+  | Bird ->Intent.Stay
+      (* Birds move orbiting around the board in a circular pattern *)
