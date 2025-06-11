@@ -63,10 +63,6 @@ val dilate_n_times : t -> land_type -> int -> t
 val erode_n_times : t -> land_type -> int -> t
 (** [erode_n_times board terrain_type iterations] applies erosion [iterations] times. *)
 
-val count_neighbors_radius : t -> land_type -> int -> int -> int -> int
-(** [count_neighbors_radius board terrain_type row col radius] counts neighbors of [terrain_type] 
-    within [radius] distance from position (row, col). *)
-
 val print : t -> unit
 (** [print b] prints the board [b] in plain text format to the standard output. *)
 
