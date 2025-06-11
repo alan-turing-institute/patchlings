@@ -47,20 +47,19 @@ let resolve_effect (_ : int) (board : Board.t)
 
 (* Functions for external runner support (pipe branch functionality) *)
 let get_player_env (board : Board.t) (player : Player.t) =
-  let steps_1d = [ -1; 0; 1 ] in
-  let steps_2d =
-    List.concat
-      (List.map (fun x -> List.map (fun y -> (x, y)) steps_1d) steps_1d)
-  in
+  (* This variable lists the relative positions around the player in order. The order
+     determines the ordering of the bytes that the Assembly programs see, so please don't
+     change it without consulting others. *)
+  let steps_in_order = [-1,-1; 0,-1; 1,-1; 1,0; 1,1; 0,1; -1,1; -1,0; 0,0;] in
   let loc = player.location in
   List.map
     (fun (step : int * int) ->
       Board.get_cell board (fst loc + fst step, snd loc + snd step))
-    steps_2d
+    steps_in_order
 
 let serialise_env (env : Board.land_type list) =
   let c_list = List.map Board.serialise_land_type env in
-  List.to_seq c_list |> Seq.take 8 |> Bytes.of_seq
+  List.to_seq c_list |> Bytes.of_seq
 
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     (players : Player.t list) =

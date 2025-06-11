@@ -58,7 +58,7 @@ fn main() {
 
         let inputs = inputs_of_buf(buf.clone());
 
-        let mut results: Vec<(String, Option<u32>)> = binary_paths
+        let mut results: Vec<(String, Option<u8>)> = binary_paths
             .iter()
             .map(|(filename, path)| {
                 let input = inputs
@@ -77,10 +77,10 @@ fn main() {
             results.sort_by_key(|(id, _)| {
                 u32::from_str_radix(id, 10).expect("asm file names must be ints")
             });
-            fn to_score(score_opt: &Option<u32>) -> String {
+            fn to_score(score_opt: &Option<u8>) -> String {
                 match score_opt {
                     None => String::from("_,"),
-                    Some(n) => format!("{},", n),
+                    Some(n) => format!("{},", *n as char),
                 }
             }
             let out = results
@@ -132,7 +132,7 @@ fn build_wrapper(
     Some(output_path)
 }
 
-fn run_wrapper(path: &Path, input: &str, debug: bool) -> Option<u32> {
+fn run_wrapper(path: &Path, input: &str, debug: bool) -> Option<u8> {
     let mut child = Command::new(path)
         .arg(input)
         .stdout(Stdio::piped())
@@ -145,7 +145,7 @@ fn run_wrapper(path: &Path, input: &str, debug: bool) -> Option<u32> {
         Some(status) if status.success() => {
             let mut stdout = String::new();
             child.stdout.as_mut()?.read_to_string(&mut stdout).ok()?;
-            stdout.trim().parse::<u32>().ok()
+            stdout.trim().parse::<u8>().ok()
         }
         Some(status) => {
             let mut stderr = String::new();
