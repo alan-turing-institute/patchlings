@@ -1,0 +1,6 @@
+(executable
+ (public_name test_graphics)
+ (name graphics)
+ (libraries graphics base64)
+ (flags (:standard -warn-error "-unused-value-declaration"))
+)
