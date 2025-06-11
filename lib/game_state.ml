@@ -233,3 +233,16 @@ let print_with_players state =
   print_newline ();
   state |> string_of_t |> print_endline;
   print_newline ()
+
+let get_player_coordinate_map (state : t) : Player.t CoordinateMap.t =
+  List.fold_left
+    (fun m player ->
+      if player.Player.alive && player_in_bounds state.board player then
+        let updated_players =
+          match CoordinateMap.find_opt player.location m with
+          | None -> PlayerSet.singleton player
+          | Some players -> PlayerSet.add player players
+        in
+        CoordinateMap.add player.location updated_players m
+      else m)
+    CoordinateMap.empty state.players
