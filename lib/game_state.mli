@@ -19,10 +19,6 @@ val string_of_board_and_players : t -> string
 (** [string_of_board_and_players state] converts the board to a string
     representation, making sure to include the players on it *)
 
-val strings_of_player_statuses : t -> string list
-(** [strings_of_player_statuses state] converts each player's status
-    to a string representation *)
-
 val table_of_player_statuses : ?n_columns:int -> t -> string
 (** [table_of_player_statuses state] converts the player statuses to a
     table-like string representation *)
@@ -40,4 +36,4 @@ val get_player_env : Board.t -> Player.t -> Board.land_type list
 val serialise_env : Board.land_type list -> bytes
 
 val get_intents_from_manyarms :
-  Runner.t -> Board.t -> Player.t list -> Intent.t list
+  ?verbose:bool -> Runner.t -> Board.t -> Player.t list -> Intent.t list

@@ -144,6 +144,7 @@ let run_tui grid_size n_players max_iterations =
     | _ -> (model, Command.Noop)
   in
   let view model =
+    (* Render the game state and player statuses *)
     let board_and_players =
       Game_state.string_of_board_and_players model.game_state
     in
@@ -154,9 +155,10 @@ let run_tui grid_size n_players max_iterations =
       Pretty.(
         vcat Centre
           [
-            Printf.sprintf "=== Iteration %d / %d ===" model.current_iter
-              max_iterations;
-            "(->/n=next, q=quit)";
+            Pretty.bold
+              (Printf.sprintf "=== Iteration %d / %d ===" model.current_iter
+                 max_iterations);
+            Pretty.fg 93 "->/n: next   q: quit";
           ])
     in
     Pretty.(vcat Centre [ board_and_players; player_statuses; box info ])

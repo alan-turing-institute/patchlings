@@ -50,7 +50,19 @@ let get_player_env (board : Board.t) (player : Player.t) =
   (* This variable lists the relative positions around the player in order. The order
      determines the ordering of the bytes that the Assembly programs see, so please don't
      change it without consulting others. *)
-  let steps_in_order = [-1,-1; 0,-1; 1,-1; 1,0; 1,1; 0,1; -1,1; -1,0; 0,0;] in
+  let steps_in_order =
+    [
+      (-1, -1);
+      (0, -1);
+      (1, -1);
+      (1, 0);
+      (1, 1);
+      (0, 1);
+      (-1, 1);
+      (-1, 0);
+      (0, 0);
+    ]
+  in
   let loc = player.location in
   List.map
     (fun (step : int * int) ->
@@ -61,7 +73,7 @@ let serialise_env (env : Board.land_type list) =
   let c_list = List.map Board.serialise_land_type env in
   List.to_seq c_list |> Bytes.of_seq
 
-let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
+let get_intents_from_manyarms ?(verbose : bool = false) (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
   let env_bytes =
     List.map (fun p -> serialise_env (get_player_env board p)) players
@@ -69,12 +81,12 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
   let to_write =
     String.cat (String.concat "," (List.map Bytes.to_string env_bytes)) ","
   in
-  print_endline to_write;
+  if verbose then prerr_endline to_write;
   Out_channel.output_string r.out_chan to_write;
 
   Out_channel.output_string r.out_chan "\n";
   Out_channel.flush r.out_chan;
-  print_endline "Sent envs to manyarms";
+  if verbose then prerr_endline "Sent envs to manyarms";
   (* Read intents from the manyarms runner *)
   let maybe_intents = In_channel.input_line r.in_chan in
   match maybe_intents with
@@ -175,24 +187,14 @@ let string_of_board_and_players (state : t) =
       | Some count -> count
       | None -> 0
     in
-    if n_players > 1 then "👥"
-    else if n_players == 1 then "🧍"
-    else Board.get_cell board (i, j) |> land_type_to_str
+    (* Print players in inverse colour *)
+    if n_players > 1 then Pretty.bg 130 "👥"
+    else if n_players == 1 then Pretty.bg 130 "🧍"
+    else Board.get_cell board (i, j) |> land_type_to_str |> Pretty.bg 230
   in
   String.concat "\n"
     (List.init board_height (fun i ->
          String.concat "" (List.init board_width (fun j -> get_emoji (i, j)))))
-
-let strings_of_player_statuses (state : t) : string list =
-  List.map
-    (fun player ->
-      Printf.sprintf "%s%s %s"
-        (if player.Player.alive then "🧍" else "☠️")
-        player.Player.name
-        (match player.Player.last_intent with
-        | Some intent -> Intent.to_string intent
-        | None -> "No intent"))
-    state.players
 
 module IntMap = Map.Make (Int)
 module PlayerSet = Set.Make (Player)
@@ -236,9 +238,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
 
 let string_of_t (state : t) =
   let board_string = string_of_board_and_players state in
-  let player_statuses_string =
-    String.concat "\n" (strings_of_player_statuses state)
-  in
+  let player_statuses_string = table_of_player_statuses state in
   let time_string = Printf.sprintf "Time: %d" state.time in
   let gaia_status = Gaia.status_report state.gaia state.board in
   String.concat "\n"
