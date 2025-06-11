@@ -112,20 +112,19 @@ type tui_state = {
 let run_tui grid_size n_players max_iterations =
   let open Minttea in
   (* let open Leaves in *)
-  let info_style =
-    Spices.(default |> faint true |> fg (color "245") |> build)
-  in
-
   let initial_state, runner = initialise grid_size n_players in
   let initial_model = { game_state = initial_state; current_iter = 0 } in
 
   let init _model = Command.Noop in
   let update event model =
     match event with
-    | Event.KeyDown (Key "q") -> (model, Command.Quit)
+    | Event.KeyDown (Key "q") ->
+        Runner.terminate runner;
+        (model, Command.Quit)
     | Event.KeyDown (Right | Key "n") ->
         if model.current_iter >= max_iterations then (
           print_endline "Maximum iterations reached!";
+          Runner.terminate runner;
           (model, Command.Quit))
         else
           let seed = Random.int 1000 in
@@ -146,10 +145,10 @@ let run_tui grid_size n_players max_iterations =
   in
   let view model =
     let info =
-      info_style "=== Iteration %d / %d === (->/n=next, q=quit)"
+      Printf.sprintf "=== Iteration %d / %d === (->/n=next, q=quit)"
         model.current_iter max_iterations
     in
-    Format.sprintf "\n\n%s\n%s\n" (Game_state.string_of_t model.game_state) info
+    Pretty.(vcat Centre [ Game_state.string_of_t model.game_state; box info ])
   in
   let app = Minttea.app ~init ~update ~view () in
   Minttea.start app ~initial_model

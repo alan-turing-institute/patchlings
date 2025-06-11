@@ -19,6 +19,7 @@ depends: [
   "minttea"
   "spices"
   "leaves"
+  "wcwidth"
   "odoc" {with-doc}
 ]
 build: [

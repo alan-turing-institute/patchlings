@@ -1,3 +1,3 @@
 (library
  (name patchlings)
- (libraries yojson unix))
+ (libraries yojson unix wcwidth))
