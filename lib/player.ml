@@ -1,6 +1,7 @@
 open Board
 
 type behavior =
+  | AssemblyRunner
   | RandomWalk
   | CautiousWalk
   | Stationary
@@ -70,6 +71,7 @@ let string_of_behavior (b : behavior) =
   | CautiousWalk -> "cautious walk"
   | Stationary -> "stationary"
   | Death_Plant -> "death plant"
+  | AssemblyRunner -> "assembly player"
 
 let init_with_name (location : int * int) (behavior : behavior) (is_npc: bool) (name : string) 
     =
@@ -96,6 +98,8 @@ let update_stats player =
     (* If the player is alive, update visited tiles *)
     visited_tiles = PositionSet.add player.location player.visited_tiles;
   }
+
+exception InvalidBehaviour of string
 
 let step (_ : int) (board : Board.t) player =
   let updated_player = update_stats player in
@@ -145,4 +149,4 @@ let get_intent (board : Board.t) (player : t) =
         List.nth safe_directions index
       else Intent.Stay
   | Death_Plant ->Intent.Stay
-      (* Death_Plants move orbiting around the board in a circular pattern *)
+  | AssemblyRunner -> raise (InvalidBehaviour "AssemblyRunner behavior needs intent to be set by a runner, not get_intent")

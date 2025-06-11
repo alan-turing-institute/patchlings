@@ -62,7 +62,7 @@ val interact_entities (player_1: Player.t) (player_2: player Player.t) =
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
   let env_bytes =
-    List.map (fun p -> Envinroment.serialise_env (Envinroment.get_player_env board p)) players
+    List.map (fun p -> Environment.serialise_env (Environment.get_player_env board p)) players
   in
   let to_write =
     String.cat (String.concat "," (List.map Bytes.to_string env_bytes)) ","
@@ -81,7 +81,7 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
 
 let get_intents_and_players_zip (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
-    let (npcs, people) = List.partition (fun p -> p.is_npc) players in
+    let (people, npcs) = List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players in
     let people_intents = get_intents_from_manyarms r board people in
     let npcs_intents = List.map (fun p -> Player.get_intent board p) npcs in
     let intents = people_intents @ npcs_intents in

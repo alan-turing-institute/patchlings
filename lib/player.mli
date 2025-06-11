@@ -1,4 +1,5 @@
 type behavior =
+  | AssemblyRunner
   | RandomWalk
   | CautiousWalk
   | Stationary
