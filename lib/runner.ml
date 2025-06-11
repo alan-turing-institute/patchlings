@@ -4,7 +4,9 @@ type t = {
 }
 
 let init () =
-  let process_str = String.concat "" ["./controller "; Unix.getcwd (); "/asm "; "./wrapper "] in
+  let process_str =
+    String.concat "" [ "./controller "; Unix.getcwd (); "/asm "; "./wrapper " ]
+  in
   let in_chan, out_chan = Unix.open_process process_str in
   In_channel.set_binary_mode in_chan false;
   Out_channel.set_binary_mode out_chan false;

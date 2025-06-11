@@ -52,6 +52,7 @@ let get_next_name () =
   in
   incr name_counter;
   name
+
 let string_of_behavior (b : behavior) =
   match b with
   | RandomWalk -> "random walk"

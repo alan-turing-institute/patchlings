@@ -27,7 +27,11 @@ let resolve_effect (_ : int) (board : Board.t)
   let new_y = (((current_y + delta_y) mod width) + width) mod width in
 
   (* Update player location while preserving all other fields *)
-  { player with Player.location = (new_x, new_y); Player.last_intent = Some intent }
+  {
+    player with
+    Player.location = (new_x, new_y);
+    Player.last_intent = Some intent;
+  }
 
 (* let get_intent (_: Board.t) (_: Player.t) =
    (* Random walk - choose only cardinal directions (up/down/left/right) and Stay *)
@@ -63,7 +67,9 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
   let env_int32s =
     List.map (fun p -> serialise_env (get_player_env board p)) players
   in
-  let to_write = String.cat (String.concat "," (List.map Int32.to_string env_int32s)) ","in
+  let to_write =
+    String.cat (String.concat "," (List.map Int32.to_string env_int32s)) ","
+  in
   print_endline to_write;
   Out_channel.output_string r.out_chan to_write;
 
@@ -186,8 +192,7 @@ let string_of_player_statuses (state : t) =
           (if player.Player.alive then "🧍" else "☠️")
           (match player.Player.last_intent with
           | Some intent -> Intent.to_string intent
-          | None -> "No intent")
-      )
+          | None -> "No intent"))
       state.players
   in
   (* Helper functions for list manipulation *)
