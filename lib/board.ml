@@ -321,3 +321,12 @@ let dimensions (board : t) : int * int =
   let height = Array.length board in
   let width = if height > 0 then Array.length board.(0) else 0 in
   (height, width)
+
+let rec find_safe_position (board : t) =
+  let board_height, board_width = dimensions board in
+  let x = Random.int board_height in
+  let y = Random.int board_width in
+  let terrain = get_cell board (x, y) in
+  match land_type_to_cell_state terrain with
+  | Good -> (x, y)
+  | Bad -> find_safe_position board

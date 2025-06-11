@@ -9,24 +9,10 @@ let initialise grid_size n_players =
   Random.self_init ();
   let initial_board = Board.init_with_size (Random.int 10) grid_size in
   let runner = Runner.init () in
-
-  let board_height, board_width = Board.dimensions initial_board in
   let behaviours =
     [ Player.RandomWalk; Player.CautiousWalk; Player.Stationary ]
   in
-
-  (* Function to find a safe spawn position *)
-  let rec find_safe_position () =
-    let x = Random.int board_height in
-    let y = Random.int board_width in
-    let terrain = Board.get_cell initial_board (x, y) in
-    match terrain with
-    | Board.Open_land | Board.Forest -> (x, y) (* Safe positions *)
-    | Board.Ocean | Board.Lava -> find_safe_position () (* Try again *)
-  in
-
-  let locations = List.init n_players (fun _ -> find_safe_position ()) in
-  let test_players = Player.init locations behaviours in
+  let test_players = Player.init n_players initial_board behaviours in
   (Game_state.init initial_board test_players, runner)
 
 (* Generate a stream of game states, starting from an initial state, and

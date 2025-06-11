@@ -59,12 +59,11 @@ let get_random_behaviour (behaviours : behavior list) =
   let i = Random.int (List.length behaviours) in
   List.nth behaviours i
 
-let init (locations : (int * int) list) (behaviours : behavior list) =
-  (* TODO: must check that they have the same length *)
-  let n_locations = List.length locations in
-  let names = Seq.take n_locations names |> List.of_seq in
-  List.map2
-    (fun loc nm ->
+let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
+  let names = Seq.take n_players names |> List.of_seq in
+  List.map
+    (fun nm ->
+      let loc = Board.find_safe_position board in
       {
         alive = true;
         location = loc;
@@ -74,7 +73,6 @@ let init (locations : (int * int) list) (behaviours : behavior list) =
         last_intent = None;
         name = nm;
       })
-    locations
     names
 
 let update_stats player =

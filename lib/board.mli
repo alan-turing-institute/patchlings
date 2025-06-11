@@ -86,3 +86,5 @@ val init_empty : int -> int -> t
 
 val set_cell : t -> int * int -> land_type -> unit
 (** [set_cell board (row, col) land_type] sets the cell at position (row, col) to the given land_type *)
+
+val find_safe_position : t -> int * int

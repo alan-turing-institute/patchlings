@@ -16,7 +16,7 @@ type t = {
 }
 
 val compare : t -> t -> int
-val init : (int * int) list -> behavior list -> t list
+val init : int -> Board.t -> behavior list -> t list
 val step : int -> Board.t -> t -> t
 val get_intent : Board.t -> t -> Intent.t
 val string_of_behavior : behavior -> string
