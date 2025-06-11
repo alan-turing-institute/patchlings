@@ -27,11 +27,11 @@ let land_type_to_cell_state (lt : land_type) : cell_state =
 
 let serialise_land_type (lt : land_type) =
   match lt with
-  | Ocean -> "0"
-  | Open_land -> "1"
-  | Forest -> "2"
-  | Lava -> "3"
-  | Out_of_bounds -> "4"
+  | Ocean -> 'O'
+  | Open_land -> 'P'
+  | Forest -> 'F'
+  | Lava -> 'L'
+  | Out_of_bounds -> 'X'
 
 type t = land_type array array
 
