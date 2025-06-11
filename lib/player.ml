@@ -23,37 +23,31 @@ type t = {
 
 let compare (a : t) (b : t) = compare a.name b.name
 
-(* List of 10 random names for players *)
-let random_names =
-  [
-    "Ash";
-    "Sage";
-    "River";
-    "Storm";
-    "Blaze";
-    "Echo";
-    "Frost";
-    "Luna";
-    "Raven";
-    "Sky";
-  ]
-
-(* Counter for assigning names *)
-let name_counter = ref 0
-
-(* Get the next available name *)
-let get_next_name () =
-  let base_name =
-    List.nth random_names (!name_counter mod List.length random_names)
+let names : string Seq.t =
+  let base_names =
+    [
+      "Ash";
+      "Sage";
+      "River";
+      "Storm";
+      "Blaze";
+      "Echo";
+      "Frost";
+      "Luna";
+      "Raven";
+      "Sky";
+    ]
   in
-  let name =
-    if !name_counter >= List.length random_names then
-      Printf.sprintf "%s%d" base_name
-        ((!name_counter / List.length random_names) + 1)
-    else base_name
-  in
-  incr name_counter;
-  name
+  let n = List.length base_names in
+  Seq.map
+    (fun i ->
+      let base_name = List.nth base_names (i mod n) in
+      let modifier = (i / n) + 1 in
+      let modifier_string =
+        if modifier == 1 then "" else string_of_int modifier
+      in
+      Printf.sprintf "%s_%s" base_name modifier_string)
+    (Seq.ints 0)
 
 let string_of_behavior (b : behavior) =
   match b with
@@ -61,22 +55,27 @@ let string_of_behavior (b : behavior) =
   | CautiousWalk -> "cautious walk"
   | Stationary -> "stationary"
 
-let init_with_name (location : int * int) (behavior : behavior) (name : string)
-    =
-  {
-    alive = true;
-    location;
-    behavior;
-    age = 0;
-    visited_tiles = PositionSet.singleton location;
-    last_intent = None;
-    name;
-  }
+let get_random_behaviour (behaviours : behavior list) =
+  let i = Random.int (List.length behaviours) in
+  List.nth behaviours i
 
-let init (location : int * int) (behavior : behavior) =
-  init_with_name location behavior (get_next_name ())
-
-let reset_name_counter () = name_counter := 0
+let init (locations : (int * int) list) (behaviours : behavior list) =
+  (* TODO: must check that they have the same length *)
+  let n_locations = List.length locations in
+  let names = Seq.take n_locations names |> List.of_seq in
+  List.map2
+    (fun loc nm ->
+      {
+        alive = true;
+        location = loc;
+        behavior = get_random_behaviour behaviours;
+        age = 0;
+        visited_tiles = PositionSet.singleton loc;
+        last_intent = None;
+        name = nm;
+      })
+    locations
+    names
 
 let update_stats player =
   {

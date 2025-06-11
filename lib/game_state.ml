@@ -7,12 +7,8 @@ type t = {
   gaia : Gaia.t;
 }
 
-let init_with_gaia (board : Board.t) (players : Player.t list) (gaia : Gaia.t) :
-    t =
-  { board; players; time = 0; gaia }
-
 let init (board : Board.t) (players : Player.t list) : t =
-  init_with_gaia board players (Gaia.create Gaia.default_targets)
+  { board; players; time = 0; gaia = Gaia.create Gaia.default_targets }
 
 let resolve_effect (_ : int) (board : Board.t)
     ((player, intent) : Player.t * Intent.t) =
@@ -32,18 +28,6 @@ let resolve_effect (_ : int) (board : Board.t)
     Player.location = (new_x, new_y);
     Player.last_intent = Some intent;
   }
-
-(* let get_intent (_: Board.t) (_: Player.t) =
-   (* Random walk - choose only cardinal directions (up/down/left/right) and Stay *)
-   let directions = [
-     Intent.North;  (* up *)
-     Intent.South;  (* down *)
-     Intent.East;   (* right *)
-     Intent.West;   (* left *)
-     Intent.Stay    (* no movement *)
-   ] in
-   let index = Random.int (List.length directions) in
-   List.nth directions index *)
 
 (* Functions for external runner support (pipe branch functionality) *)
 let get_player_env (board : Board.t) (player : Player.t) =
@@ -73,8 +57,8 @@ let serialise_env (env : Board.land_type list) =
   let c_list = List.map Board.serialise_land_type env in
   List.to_seq c_list |> Bytes.of_seq
 
-let get_intents_from_manyarms ?(verbose : bool = false) (r : Runner.t) (board : Board.t)
-    (players : Player.t list) =
+let get_intents_from_manyarms ?(verbose : bool = false) (r : Runner.t)
+    (board : Board.t) (players : Player.t list) =
   let env_bytes =
     List.map (fun p -> serialise_env (get_player_env board p)) players
   in

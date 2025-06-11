@@ -6,7 +6,6 @@ type t = {
 }
 
 val init : Board.t -> Player.t list -> t
-val init_with_gaia : Board.t -> Player.t list -> Gaia.t -> t
 val step : int -> t -> t
 val step_with_runner : int -> Runner.t -> t -> t
 val handle_players : t -> t
