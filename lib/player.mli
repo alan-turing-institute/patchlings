@@ -17,8 +17,8 @@ type t = {
   is_npc : bool;
 }
 
-val init : int * int -> behavior -> t
-val init_with_name : int * int -> behavior -> string -> t
+val init : int * int -> behavior -> bool -> t
+val init_with_name : int * int -> behavior -> bool -> string -> t
 val reset_name_counter : unit -> unit
 val step : int -> Board.t -> t -> t
 val get_intent : Board.t -> t -> Intent.t
