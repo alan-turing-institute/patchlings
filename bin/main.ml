@@ -144,11 +144,22 @@ let run_tui grid_size n_players max_iterations =
     | _ -> (model, Command.Noop)
   in
   let view model =
-    let info =
-      Printf.sprintf "=== Iteration %d / %d === (->/n=next, q=quit)"
-        model.current_iter max_iterations
+    let board_and_players =
+      Game_state.string_of_board_and_players model.game_state
     in
-    Pretty.(vcat Centre [ Game_state.string_of_t model.game_state; box info ])
+    let player_statuses =
+      Game_state.table_of_player_statuses model.game_state
+    in
+    let info =
+      Pretty.(
+        vcat Centre
+          [
+            Printf.sprintf "=== Iteration %d / %d ===" model.current_iter
+              max_iterations;
+            "(->/n=next, q=quit)";
+          ])
+    in
+    Pretty.(vcat Centre [ board_and_players; player_statuses; box info ])
   in
   let app = Minttea.app ~init ~update ~view () in
   Minttea.start app ~initial_model

@@ -19,9 +19,13 @@ val string_of_board_and_players : t -> string
 (** [string_of_board_and_players state] converts the board to a string
     representation, making sure to include the players on it *)
 
-val string_of_player_statuses : t -> string
-(** [string_of_player_statuses state] converts the players' statuses
+val strings_of_player_statuses : t -> string list
+(** [strings_of_player_statuses state] converts each player's status
     to a string representation *)
+
+val table_of_player_statuses : ?n_columns:int -> t -> string
+(** [table_of_player_statuses state] converts the player statuses to a
+    table-like string representation *)
 
 val string_of_t : t -> string
 (** [string_of_t state] converts the game state to a string representation *)

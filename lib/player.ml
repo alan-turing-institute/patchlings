@@ -21,6 +21,8 @@ type t = {
   name : string;
 }
 
+let compare (a : t) (b : t) = compare a.name b.name
+
 (* List of 10 random names for players *)
 let random_names =
   [

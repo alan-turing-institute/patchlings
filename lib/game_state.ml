@@ -184,46 +184,62 @@ let string_of_board_and_players (state : t) =
     (List.init board_height (fun i ->
          String.concat "" (List.init board_width (fun j -> get_emoji (i, j)))))
 
-let string_of_player_statuses (state : t) =
-  let compact_statuses =
+let strings_of_player_statuses (state : t) : string list =
+  List.map
+    (fun player ->
+      Printf.sprintf "%s%s %s"
+        (if player.Player.alive then "🧍" else "☠️")
+        player.Player.name
+        (match player.Player.last_intent with
+        | Some intent -> Intent.to_string intent
+        | None -> "No intent"))
+    state.players
+
+module IntMap = Map.Make (Int)
+module PlayerSet = Set.Make (Player)
+
+let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
+  let player_columns_map =
+    Seq.fold_lefti
+      (fun acc i player ->
+        let col = i mod n_columns in
+        match IntMap.find_opt col acc with
+        | Some lst -> IntMap.add col (PlayerSet.add player lst) acc
+        | None -> IntMap.add col (PlayerSet.singleton player) acc)
+      IntMap.empty
+      (state.players |> List.to_seq)
+  in
+  let player_columns = player_columns_map |> IntMap.bindings |> List.map snd in
+  let open Player in
+  let player_column_strings =
     List.map
-      (fun player ->
-        Printf.sprintf "%s%s %s" player.Player.name
-          (if player.Player.alive then "🧍" else "☠️")
-          (match player.Player.last_intent with
-          | Some intent -> Intent.to_string intent
-          | None -> "No intent"))
-      state.players
+      (fun ps ->
+        let longest_name_len =
+          PlayerSet.fold (fun p acc -> max acc (String.length p.name)) ps 0
+        in
+        let pad len name =
+          let padding = String.make (len - String.length name) ' ' in
+          name ^ padding
+        in
+        String.concat "\n"
+        @@ List.map
+             (fun p ->
+               Printf.sprintf "%s %s %s"
+                 (if p.alive then "🧍" else "☠️")
+                 (pad longest_name_len p.name)
+                 (match p.last_intent with
+                 | Some intent -> Intent.to_string intent
+                 | None -> "No intent"))
+             (PlayerSet.to_list ps))
+      player_columns
   in
-  (* Helper functions for list manipulation *)
-  let rec take n lst =
-    if n <= 0 || lst = [] then []
-    else
-      match lst with
-      | [] -> []
-      | h :: t -> h :: take (n - 1) t
-  in
-  let rec drop n lst =
-    if n <= 0 then lst
-    else
-      match lst with
-      | [] -> []
-      | _ :: t -> drop (n - 1) t
-  in
-  (* Split into chunks of 10 and format as lines *)
-  let rec chunk_list lst n =
-    if List.length lst <= n then [ lst ]
-    else
-      let first_chunk = take n lst in
-      let rest = drop n lst in
-      first_chunk :: chunk_list rest n
-  in
-  let chunks = chunk_list compact_statuses 10 in
-  List.map (String.concat " ") chunks |> String.concat "\n"
+  Pretty.(hcat ~sep:"   " Start player_column_strings)
 
 let string_of_t (state : t) =
   let board_string = string_of_board_and_players state in
-  let player_statuses_string = string_of_player_statuses state in
+  let player_statuses_string =
+    String.concat "\n" (strings_of_player_statuses state)
+  in
   let time_string = Printf.sprintf "Time: %d" state.time in
   let gaia_status = Gaia.status_report state.gaia state.board in
   String.concat "\n"

@@ -15,6 +15,7 @@ type t = {
   name : string;
 }
 
+val compare : t -> t -> int
 val init : int * int -> behavior -> t
 val init_with_name : int * int -> behavior -> string -> t
 val reset_name_counter : unit -> unit

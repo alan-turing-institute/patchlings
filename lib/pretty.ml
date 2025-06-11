@@ -9,10 +9,8 @@ let get_width (s : string) : int =
   String.split_on_char '\n' s
   |> List.fold_left (fun acc line -> max acc (wcswidth line)) 0
 
-let get_height (s : string) : int = 
-  String.fold_left
-    (fun acc c -> if c = '\n' then acc + 1 else acc)
-    1 s
+let get_height (s : string) : int =
+  String.fold_left (fun acc c -> if c = '\n' then acc + 1 else acc) 1 s
 
 let vcat ?(sep : string = "\n") (align : align) (blocks : string list) =
   let widths = List.map get_width blocks in
@@ -70,13 +68,18 @@ let hcat ?(sep : string = " ") (align : align) (blocks : string list) =
   |> String.concat "\n"
 
 let box ?(padding : int = 0) (s : string) =
-  let box_width = get_width s + 2 * padding in
+  let text_width = get_width s in
+  let box_width = text_width + (2 * padding) in
   let straight_line = String.concat "" (List.init box_width (fun _ -> "─")) in
   let toprule = "┌" ^ straight_line ^ "┐" in
-  let lines = s |> String.split_on_char '\n' |> List.map (fun line -> 
-    let pad = String.make padding ' ' in
-    "│" ^ pad ^ line ^ pad ^ "│"
-  ) in
+  let lines =
+    s |> String.split_on_char '\n'
+    |> List.map (fun line ->
+           let this_width = wcswidth line in
+           let pad = String.make padding ' ' in
+           "│" ^ pad ^ line
+           ^ String.make (text_width - this_width) ' '
+           ^ pad ^ "│")
+  in
   let bottomrule = "└" ^ straight_line ^ "┘" in
   toprule ^ "\n" ^ String.concat "\n" lines ^ "\n" ^ bottomrule
-
