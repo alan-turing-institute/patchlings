@@ -2,7 +2,7 @@ type behavior =
   | RandomWalk
   | CautiousWalk
   | Stationary
-  | Bird
+  | Death_Plant
 
 module PositionSet : Set.S with type elt = int * int
 

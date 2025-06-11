@@ -4,7 +4,7 @@ type behavior =
   | RandomWalk
   | CautiousWalk
   | Stationary
-  | Bird
+  | Death_Plant
 
 module PositionSet = Set.Make (struct
   type t = int * int
@@ -69,7 +69,7 @@ let string_of_behavior (b : behavior) =
   | RandomWalk -> "random walk"
   | CautiousWalk -> "cautious walk"
   | Stationary -> "stationary"
-  | Bird -> "bird"
+  | Death_Plant -> "death plant"
 
 let init_with_name (location : int * int) (behavior : behavior) (is_npc: bool) (name : string) 
     =
@@ -144,5 +144,5 @@ let get_intent (board : Board.t) (player : t) =
         let index = Random.int (List.length safe_directions) in
         List.nth safe_directions index
       else Intent.Stay
-  | Bird ->Intent.Stay
-      (* Birds move orbiting around the board in a circular pattern *)
+  | Death_Plant ->Intent.Stay
+      (* Death_Plants move orbiting around the board in a circular pattern *)
