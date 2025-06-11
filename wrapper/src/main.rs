@@ -12,7 +12,7 @@ fn main() {
         process::exit(1);
     }
     let bytes = arg.as_bytes();
-    let input = u64::from_le_bytes(bytes.try_into().expect("Slice with incorrect length"));
+    let input = u64::from_be_bytes(bytes.try_into().expect("Slice with incorrect length"));
 
     let result = unsafe { take_turn(input) };
     println!("{}", result);
