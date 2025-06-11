@@ -23,3 +23,4 @@ val reset_name_counter : unit -> unit
 val step : int -> Board.t -> t -> t
 val get_intent : Board.t -> t -> Intent.t
 val string_of_behavior : behavior -> string
+val compare : t -> t -> int

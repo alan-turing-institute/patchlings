@@ -59,26 +59,10 @@ val interact_entities (player_1: Player.t) (player_2: player Player.t) =
    let index = Random.int (List.length directions) in
    List.nth directions index *)
 
-(* Functions for external runner support (pipe branch functionality) *)
-let get_player_env (board : Board.t) (player : Player.t) =
-  (* This variable lists the relative positions around the player in order. The order
-     determines the ordering of the bytes that the Assembly programs see, so please don't
-     change it without consulting others. *)
-  let steps_in_order = [-1,-1; 0,-1; 1,-1; 1,0; 1,1; 0,1; -1,1; -1,0; 0,0;] in
-  let loc = player.location in
-  List.map
-    (fun (step : int * int) ->
-      Board.get_cell board (fst loc + fst step, snd loc + snd step))
-    steps_in_order
-
-let serialise_env (env : Board.land_type list) =
-  let c_list = List.map Board.serialise_land_type env in
-  List.to_seq c_list |> Bytes.of_seq
-
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
   let env_bytes =
-    List.map (fun p -> serialise_env (get_player_env board p)) players
+    List.map (fun p -> Envinroment.serialise_env (Envinroment.get_player_env board p)) players
   in
   let to_write =
     String.cat (String.concat "," (List.map Bytes.to_string env_bytes)) ","
@@ -88,7 +72,6 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
 
   Out_channel.output_string r.out_chan "\n";
   Out_channel.flush r.out_chan;
-  print_endline "Sent envs to manyarms";
   (* Read intents from the manyarms runner *)
   let maybe_intents = In_channel.input_line r.in_chan in
   match maybe_intents with

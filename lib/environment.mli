@@ -8,3 +8,5 @@ type t = {
 }
 
 
+val get_player_env : Board.t -> Player.t -> Board.land_type list
+val serialise_env : Board.land_type list -> bytes

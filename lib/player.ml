@@ -9,26 +9,28 @@ type behavior =
 module PositionSet = Set.Make (struct
   type t = int * int
 
-  let compare = compare
-end)
-
-
-module Player = (struct
-  type t = {
-    alive : bool;
-    location : int * int;
-    behavior : behavior;
-    age : int;
-    visited_tiles : PositionSet.t;
-    last_intent : Intent.t option;
-    name : string;
-    is_npc : bool;
-  }
-  let compare a b =
-    match compare a.location b.location with
-    | 0 -> compare a.name b.name
+  let compare (a : t) (b : t) = match compare (fst a) (fst b) with
+    | 0 -> compare (snd a) (snd b)
     | cmp -> cmp
 end)
+
+type t = {
+  alive : bool;
+  location : int * int;
+  behavior : behavior;
+  age : int;
+  visited_tiles : PositionSet.t;
+  last_intent : Intent.t option;
+  name : string;
+  is_npc : bool;
+}
+
+let compare a b =
+  match compare a.is_npc b.is_npc with
+  | 0 -> (match compare a.location b.location with
+          | 0 -> compare a.name b.name
+          | cmp -> cmp)
+  | cmp -> cmp
 
 (* List of 10 random names for players *)
 let random_names =
