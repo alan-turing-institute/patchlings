@@ -60,11 +60,23 @@ let get_random_behaviour (behaviours : behavior list) =
   let i = Random.int (List.length behaviours) in
   List.nth behaviours i
 
+let find_safe_position (board : Board.t) =
+  let height, width = Board.dimensions board in
+  let rec try_position () =
+    let x = Random.int height in
+    let y = Random.int width in
+    let pos = (x, y) in
+    match Board.get_cell board pos with
+    | Board.Open_land | Board.Forest -> pos
+    | _ -> try_position ()
+  in
+  try_position ()
+
 let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
   let names = Seq.take n_players names |> List.of_seq in
   List.mapi
     (fun i nm ->
-      let loc = Board.find_safe_position board in
+      let loc = find_safe_position board in
       {
         id = i;
         alive = true;
