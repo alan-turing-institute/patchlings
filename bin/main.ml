@@ -36,7 +36,8 @@ let initialise grid_size n_players =
     Player.init_with_names actual_n_players initial_board behaviours
       player_names
   in
-  let n_npcs = Random.int 5 + 1 in
+  (* let n_npcs = Random.int 5 + 1 in *)
+  let n_npcs = 10 in
   let npcs = initialise_npcs n_npcs initial_board in
   (* Combine test players and NPCs *)
   let all_players = test_players @ npcs in

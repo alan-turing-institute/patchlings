@@ -132,10 +132,10 @@ let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   let players = state.players in
   let intents_and_players = get_intents_and_players_zip r board players in
   let players' = intents_and_players |> List.map (resolve_effect seed board) in
-  let people, _npcs =
+  let people, npcs =
     List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players'
   in
-  let players'' = perform_interactions board people in
+  let players'' = perform_interactions board people @ npcs in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
   let board' = Board_events.update_map_events gaia_config board in
