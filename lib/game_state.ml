@@ -106,8 +106,8 @@ let get_intents_and_players_zip (r : Runner.runner_option) (board : Board.t)
     (players : Player.t list) =
     let (people, npcs) = List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players in
     let people_intents = match r with
-      | Runner.WithController controller -> get_intents_from_manyarms controller board players
-      | Runner.NoController -> List.map (Player.get_intent board) players
+      | Runner.WithController controller -> get_intents_from_manyarms controller board people
+      | Runner.NoController -> List.map (Player.get_intent board) people
     in
     let npcs_intents = List.map (fun p -> Player.get_intent board p) npcs in
     let intents = people_intents @ npcs_intents in
