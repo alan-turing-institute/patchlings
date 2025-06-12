@@ -5,36 +5,22 @@ open Cmdliner.Term.Syntax
 (* Initialize game state with a board and some test players *)
 (* Use different grid sizes to demonstrate terrain grouping *)
 (* Try changing this to 1, 2, or 3 to see different effects *)
-let initialise grid_size n_players =
+let initialise grid_size n_npcs =
   Random.self_init ();
   let initial_board = Board.init_with_size (Random.int 10) grid_size in
   let runner = Runner.init () in
   (* Adjust player count and names based on available assembly programs *)
-  let actual_n_players, player_names =
-    match (Runner.get_n_programs runner, Runner.get_player_names runner) with
-    | Some n, Some names ->
-        if n <> n_players then
-          Printf.eprintf
-            "Adjusting player count from %d to %d (based on available assembly \
-             programs)\n"
-            n_players n;
-        (n, names)
-    | Some n, None ->
-        Printf.eprintf "Using %d players with default names\n" n;
-        (n, [])
-    | None, _ -> (n_players, [])
+  let player_names =
+    match Runner.get_player_names runner with
+    | Some names -> names
+    | None -> failwith "Failed to get player names from runner"
   in
-  let behaviours = [ Player.AssemblyRunner ] in
   let test_players =
-    Player.init ~names:(Some player_names) actual_n_players initial_board
-      behaviours
+    Player.init player_names initial_board [ Player.AssemblyRunner ]
   in
-  (* let n_npcs = Random.int 5 + 1 in *)
-  let n_npcs = 10 in
   let npc_names = List.init n_npcs (fun _ -> "MERCHANT OF DEATH") in
   let npcs =
-    Player.init ~names:(Some npc_names) ~start_id:100 n_npcs initial_board
-      [ Player.Death_Plant ]
+    Player.init ~start_id:100 npc_names initial_board [ Player.Death_Plant ]
   in
   (* Combine test players and NPCs *)
   let all_players = test_players @ npcs in
@@ -55,11 +41,11 @@ let trajectory initial_state runner : Game_state.t Seq.t =
   Seq.unfold unfold_step initial_state
 
 (* Run non-interactively, printing output to terminal *)
-let to_terminal grid_size n_players max_iterations =
+let to_terminal grid_size n_npcs max_iterations =
   Printf.printf "Patchlings 2 - Multi-Agent Simulation\n";
   Printf.printf "====================================\n\n";
 
-  let initial_state, runner = initialise grid_size n_players in
+  let initial_state, runner = initialise grid_size n_npcs in
   (* Add initial state to the beginning of the history *)
   let full_game_history =
     initial_state
@@ -152,10 +138,10 @@ let rec skip_to (time : int) (tui_state : tui_state)
             else skip_tui_state_by (time - newest_time) tui_state runner
         | None -> failwith "empty history, should not happen")
 
-let run_tui grid_size n_players max_time =
+let run_tui grid_size n_npcs max_time =
   let open Minttea in
   (* let open Leaves in *)
-  let initial_state, runner = initialise grid_size n_players in
+  let initial_state, runner = initialise grid_size n_npcs in
   let initial_model =
     {
       max_time;
@@ -230,9 +216,9 @@ let grid_size =
   let doc = "Set grid size for simulation (affects terrain grouping)" in
   Arg.(value & opt int 2 & info [ "g"; "grid-size" ] ~doc)
 
-let num_players =
-  let doc = "Set number of players in simulation" in
-  Arg.(value & opt int 20 & info [ "p"; "num-players" ] ~doc)
+let num_npcs =
+  let doc = "Set number of NPCs in simulation" in
+  Arg.(value & opt int 10 & info [ "n"; "num-npcs" ] ~doc)
 
 let max_iters =
   let doc = "Set maximum number of iterations in simulation" in
@@ -248,9 +234,9 @@ let main_cmd =
   @@
   let+ max_iters = max_iters
   and+ tui = use_tui
-  and+ grid_size = grid_size
-  and+ n_players = num_players in
-  if tui then run_tui grid_size n_players max_iters
-  else to_terminal grid_size n_players max_iters
+  and+ num_npcs = num_npcs
+  and+ grid_size = grid_size in
+  if tui then run_tui grid_size num_npcs max_iters
+  else to_terminal grid_size num_npcs max_iters
 
 let () = exit (Cmd.eval main_cmd)
