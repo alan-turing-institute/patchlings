@@ -10,22 +10,22 @@ type behavior =
 module PositionSet = Set.Make (struct
   type t = int * int
 
-  let compare (a : t) (b : t) = match compare (fst a) (fst b) with
+  let compare (a : t) (b : t) =
+    match compare (fst a) (fst b) with
     | 0 -> compare (snd a) (snd b)
     | cmp -> cmp
 end)
 
-
 (* type player_memory = String *)
 
 (* Get the memory of a player
-let get_memory (player : t) =
-  (* player.mem is an int64, which is 8 bytes.
-     We will only use the first 7 bytes for the memory
-     The caller can _set_ the 8th byte artibrarily, but we
-     enforce limiting the memory to 7 bytes in this function.
-     *)
-  (player.mem lsr 8) lsl 8 *)
+   let get_memory (player : t) =
+     (* player.mem is an int64, which is 8 bytes.
+        We will only use the first 7 bytes for the memory
+        The caller can _set_ the 8th byte artibrarily, but we
+        enforce limiting the memory to 7 bytes in this function.
+        *)
+     (player.mem lsr 8) lsl 8 *)
 
 type t = {
   id : int;
@@ -42,10 +42,10 @@ type t = {
 
 let compare (a : t) (b : t) = compare a.id b.id
 
-let colors : int Seq.t =
+let colors_seq : int Seq.t =
   [ 19; 130; 70; 88; 57; 52; 164; 245; 143; 45 ] |> List.to_seq |> Seq.cycle
 
-let names : string Seq.t =
+let names_seq : string Seq.t =
   let base_names =
     [
       "Ash";
@@ -95,14 +95,19 @@ let find_safe_position (board : Board.t) =
   in
   try_position ()
 
-let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
-  let names = Seq.take n_players names |> List.of_seq in
-  let colors = Seq.take n_players colors |> List.of_seq in
+let init ?(names : string list option = None) ?(start_id : int = 0) (n_players : int)
+    (board : Board.t) (behaviours : behavior list) =
+  let names =
+    match names with
+    | Some ns when List.length ns = n_players -> ns
+    | _ -> Seq.take n_players names_seq |> List.of_seq
+  in
+  let colors = Seq.take n_players colors_seq |> List.of_seq in
   List.mapi
     (fun i (nm, clr) ->
       let loc = find_safe_position board in
       {
-        id = i;
+        id = i + start_id;
         alive = true;
         location = loc;
         behavior = get_random_behaviour behaviours;
@@ -113,31 +118,6 @@ let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
         color = clr;
       })
     (List.combine names colors)
-
-let init_with_names (n_players : int) (board : Board.t)
-    (behaviours : behavior list) (custom_names : string list) =
-  let player_names =
-    if List.length custom_names = n_players then custom_names
-    else
-      (* Fall back to default names if custom names don't match player count *)
-      Seq.take n_players names |> List.of_seq
-  in
-  let colors = Seq.take n_players colors |> List.of_seq in
-  List.mapi
-    (fun i (nm, clr) ->
-      let loc = find_safe_position board in
-      {
-        id = i;
-        alive = true;
-        location = loc;
-        behavior = get_random_behaviour behaviours;
-        age = 0;
-        visited_tiles = PositionSet.singleton loc;
-        last_intent = None;
-        name = nm;
-        color = clr;
-      })
-    (List.combine player_names colors)
 
 let update_stats player =
   {
@@ -195,5 +175,9 @@ let get_intent (board : Board.t) (player : t) =
         let index = Random.int (List.length safe_directions) in
         List.nth safe_directions index
       else Move.Stay
-  | Death_Plant ->Move.Stay
-  | AssemblyRunner -> raise (InvalidBehaviour "AssemblyRunner behavior needs intent to be set by a runner, not get_intent")
+  | Death_Plant -> Move.Stay
+  | AssemblyRunner ->
+      raise
+        (InvalidBehaviour
+           "AssemblyRunner behavior needs intent to be set by a runner, not \
+            get_intent")

@@ -2,13 +2,6 @@ open Patchlings
 open Cmdliner
 open Cmdliner.Term.Syntax
 
-
-let initialise_npcs (n_npcs: int) (board: Board.t) =
-  (* Initialize NPCs with default behaviors and names *)
-  let behaviours = Array.to_list (Array.make n_npcs Player.Death_Plant) in
-  let player_names = Array.to_list (Array.make n_npcs "MERCHANT OF DEATH") in
-  Player.init_with_names n_npcs board behaviours player_names
-
 (* Initialize game state with a board and some test players *)
 (* Use different grid sizes to demonstrate terrain grouping *)
 (* Try changing this to 1, 2, or 3 to see different effects *)
@@ -33,14 +26,21 @@ let initialise grid_size n_players =
   in
   let behaviours = [ Player.AssemblyRunner ] in
   let test_players =
-    Player.init_with_names actual_n_players initial_board behaviours
-      player_names
+    Player.init ~names:(Some player_names) actual_n_players initial_board
+      behaviours
   in
   (* let n_npcs = Random.int 5 + 1 in *)
   let n_npcs = 10 in
-  let npcs = initialise_npcs n_npcs initial_board in
+  let npc_names = List.init n_npcs (fun _ -> "MERCHANT OF DEATH") in
+  let npcs =
+    Player.init ~names:(Some npc_names) ~start_id:100 n_npcs initial_board
+      [ Player.Death_Plant ]
+  in
   (* Combine test players and NPCs *)
   let all_players = test_players @ npcs in
+  prerr_endline
+  @@ Printf.sprintf "Initialising %d players with %d NPCs"
+       (List.length all_players) n_npcs;
   (* Print initial board and player information *)
   (Game_state.init initial_board all_players, runner)
 
@@ -138,7 +138,8 @@ let skip_tui_state_by (n : int) (tui_state : tui_state)
 let rec skip_to (time : int) (tui_state : tui_state)
     (runner : Runner.runner_option) =
   if time < 0 then skip_to 0 tui_state runner
-  else if time > tui_state.max_time then skip_to tui_state.max_time tui_state runner
+  else if time > tui_state.max_time then
+    skip_to tui_state.max_time tui_state runner
   else
     match IntMap.find_opt time tui_state.game_history with
     | Some _ ->
@@ -178,15 +179,21 @@ let run_tui grid_size n_players max_time =
           Runner.terminate runner;
           (model, Command.Quit)
       | Event.KeyDown (Key "f") ->
-        let new_model = skip_to (model.current_time + 5) model runner in
-        let new_cmd = if new_model.current_time > max_time then Command.Quit else Command.Noop
-        in (new_model, new_cmd)
+          let new_model = skip_to (model.current_time + 5) model runner in
+          let new_cmd =
+            if new_model.current_time > max_time then Command.Quit
+            else Command.Noop
+          in
+          (new_model, new_cmd)
       | Event.KeyDown (Key "b") ->
           (skip_to (model.current_time - 5) model runner, Command.Noop)
       | Event.KeyDown (Right | Key "n") ->
-        let new_model = skip_to (model.current_time + 1) model runner in
-        let new_cmd = if new_model.current_time > max_time then Command.Quit else Command.Noop
-        in (new_model, new_cmd)
+          let new_model = skip_to (model.current_time + 1) model runner in
+          let new_cmd =
+            if new_model.current_time > max_time then Command.Quit
+            else Command.Noop
+          in
+          (new_model, new_cmd)
       | Event.KeyDown (Left | Key "p") ->
           (skip_to (model.current_time - 1) model runner, Command.Noop)
       | _ -> (model, Command.Noop)
@@ -212,7 +219,6 @@ let run_tui grid_size n_players max_time =
               Pretty.fg 93 "<-/p : prev         ->/n: next        ";
               Pretty.fg 93 "   b : back by 5       f: forward by 5";
               Pretty.fg 93 "              q : quit                ";
-
             ])
     in
     Pretty.(
