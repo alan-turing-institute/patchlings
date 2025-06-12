@@ -2,6 +2,7 @@ type t = {
   in_chan : In_channel.t;
   out_chan : Out_channel.t;
   n_programs : int;
+  player_names : string list;
 }
 
 type runner_option = 
@@ -32,7 +33,21 @@ let init () =
         try
           let n_programs = int_of_string n_str in
           Printf.printf "Controller reports %d assembly programs available\n" n_programs;
-          WithController { in_chan; out_chan; n_programs }
+          
+          (* Read the player names *)
+          let rec read_names acc count =
+            if count <= 0 then List.rev acc
+            else
+              match In_channel.input_line in_chan with
+              | Some name -> read_names (name :: acc) (count - 1)
+              | None -> 
+                  Printf.eprintf "Failed to read all player names\n";
+                  List.rev acc
+          in
+          let player_names = read_names [] n_programs in
+          Printf.printf "Player names: %s\n" (String.concat ", " player_names);
+          
+          WithController { in_chan; out_chan; n_programs; player_names }
         with _ ->
           Printf.eprintf "Failed to parse program count from controller\n";
           NoController
@@ -55,4 +70,9 @@ let terminate runner =
 let get_n_programs runner =
   match runner with
   | WithController t -> Some t.n_programs
+  | NoController -> None
+
+let get_player_names runner =
+  match runner with
+  | WithController t -> Some t.player_names
   | NoController -> None
