@@ -16,6 +16,7 @@ type t = {
   visited_tiles : PositionSet.t;
   last_intent : Move.t option;
   name : string;
+  color: int;
 }
 
 val compare : t -> t -> int

@@ -37,9 +37,13 @@ type t = {
   last_intent : Move.t option;
   name : string;
   (* mem : player_memory; *)
+  color : int; (* Background colour when printing grid square *)
 }
 
 let compare (a : t) (b : t) = compare a.id b.id
+
+let colors : int Seq.t =
+  [ 19; 130; 70; 88; 57; 52; 164; 245; 143; 45 ] |> List.to_seq |> Seq.cycle
 
 let names : string Seq.t =
   let base_names =
@@ -93,8 +97,9 @@ let find_safe_position (board : Board.t) =
 
 let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
   let names = Seq.take n_players names |> List.of_seq in
+  let colors = Seq.take n_players colors |> List.of_seq in
   List.mapi
-    (fun i nm ->
+    (fun i (nm, clr) ->
       let loc = find_safe_position board in
       {
         id = i;
@@ -105,19 +110,21 @@ let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
         visited_tiles = PositionSet.singleton loc;
         last_intent = None;
         name = nm;
+        color = clr;
       })
-    names
+    (List.combine names colors)
 
-let init_with_names (n_players : int) (board : Board.t) (behaviours : behavior list) (custom_names : string list) =
-  let player_names = 
-    if List.length custom_names = n_players then
-      custom_names
+let init_with_names (n_players : int) (board : Board.t)
+    (behaviours : behavior list) (custom_names : string list) =
+  let player_names =
+    if List.length custom_names = n_players then custom_names
     else
       (* Fall back to default names if custom names don't match player count *)
       Seq.take n_players names |> List.of_seq
   in
+  let colors = Seq.take n_players colors |> List.of_seq in
   List.mapi
-    (fun i nm ->
+    (fun i (nm, clr) ->
       let loc = find_safe_position board in
       {
         id = i;
@@ -128,8 +135,9 @@ let init_with_names (n_players : int) (board : Board.t) (behaviours : behavior l
         visited_tiles = PositionSet.singleton loc;
         last_intent = None;
         name = nm;
+        color = clr;
       })
-    player_names
+    (List.combine player_names colors)
 
 let update_stats player =
   {

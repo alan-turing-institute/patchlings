@@ -179,8 +179,7 @@ let string_of_board_and_players (state : t) =
       | Some count -> count
       | None -> 0
     in
-    (* Print players in inverse colour *)
-    if n_players > 1 then Pretty.bg 130 "👥"
+    if n_players > 1 then Pretty.bg 233 "👥"
     else if n_players == 1 then Pretty.bg 130 "🧍"
     else Board.get_cell board (i, j) |> land_type_to_str |> Pretty.bg 230
   in
@@ -218,7 +217,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
         @@ List.map
              (fun p ->
                Printf.sprintf "%s %s %s"
-                 (if p.alive then "🧍" else "😵")
+                 (Pretty.bg p.color (if p.alive then "🧍" else "😵"))
                  (pad longest_name_len p.name)
                  (match p.last_intent with
                  | Some intent -> Move.to_string intent
