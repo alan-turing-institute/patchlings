@@ -218,7 +218,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
         @@ List.map
              (fun p ->
                Printf.sprintf "%s %s %s"
-                 (if p.alive then "🧍" else "☠️")
+                 (if p.alive then "🧍" else "😵")
                  (pad longest_name_len p.name)
                  (match p.last_intent with
                  | Some intent -> Move.to_string intent
