@@ -20,7 +20,8 @@ let player_in_bounds (board : Board.t) (player : Player.t) =
   x >= 0 && x < height && y >= 0 && y < width
 
 (* A map from coordinates to sets of players at those coordinates *)
-let get_player_coordinate_map (board : Board.t) (players : Player.t list) : Environment.PlayerSet.t Board.CoordinateMap.t =
+let get_player_coordinate_map (board : Board.t) (players : Player.t list) :
+    Environment.PlayerSet.t Board.CoordinateMap.t =
   List.fold_left
     (fun m player ->
       if player.Player.alive && player_in_bounds board player then
@@ -32,10 +33,6 @@ let get_player_coordinate_map (board : Board.t) (players : Player.t list) : Envi
         Board.CoordinateMap.add player.location updated_players m
       else m)
     Board.CoordinateMap.empty players
- 
-let get_player_positions (state : t) : int Board.CoordinateMap.t =
-  let player_map = get_player_coordinate_map state.board state.players in
-  Board.CoordinateMap.map Environment.PlayerSet.cardinal player_map
 
 let resolve_effect (_ : int) (board : Board.t)
     ((player, intent) : Player.t * Move.t) =
@@ -55,33 +52,36 @@ let resolve_effect (_ : int) (board : Board.t)
     Player.location = (new_x, new_y);
     Player.last_intent = Some intent;
   }
-  
+
 (* val perform_interactions (board : Board.t) (players : Player.t list) =
-  (* Check if there are any entities in the neighborhood *)
-  let coord_player_map = get_player_coordinate_map board in
-  let cells_in_neighborhood = get_player_env board new_player in
-  (* make  *)
+     (* Check if there are any entities in the neighborhood *)
+     let coord_player_map = get_player_coordinate_map board in
+     let cells_in_neighborhood = get_player_env board new_player in
+     (* make  *)
 
-val interact_entities (player_1: Player.t) (player_2: player Player.t) =
-  (* Placeholder for interaction logic between two players *)
-  (* For now, just return both players unchanged *)
-  (player_1, player_2) *)
+   val interact_entities (player_1: Player.t) (player_2: player Player.t) =
+     (* Placeholder for interaction logic between two players *)
+     (* For now, just return both players unchanged *)
+     (player_1, player_2) *)
 
-(* 
-let split_reply (reply : string) =
-  (* return tuple with 
-    mem = first 7 bytes
-    intent = last byte *)
-    let parts = String.to_bytes reply in
-    let mem = Bytes.sub_string parts 0 7 in
-    let intent = Bytes.get parts 7 in
-    (mem, intent) *)
+(*
+   let split_reply (reply : string) =
+     (* return tuple with
+       mem = first 7 bytes
+       intent = last byte *)
+       let parts = String.to_bytes reply in
+       let mem = Bytes.sub_string parts 0 7 in
+       let intent = Bytes.get parts 7 in
+       (mem, intent) *)
 
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
   let coord_map = get_player_coordinate_map board players in
   let env_bytes =
-    List.map (fun p -> Environment.serialise_env (Environment.get_player_env board coord_map p)) players
+    List.map
+      (fun p ->
+        Environment.serialise_env (Environment.get_player_env board coord_map p))
+      players
   in
   let to_write =
     String.cat (String.concat "," (List.map Bytes.to_string env_bytes)) ","
@@ -95,34 +95,34 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
   match maybe_replies with
   | Some replies ->
       String.split_on_char ',' replies |> List.map Move.deserialise_intent
-
   (* let maybe_intents = In_channel.input_line r.in_chan in
-  match maybe_intents with
-  | Some intents ->
-      String.split_on_char ',' intents |> List.map Intent.deserialise_intent *)
-
+     match maybe_intents with
+     | Some intents ->
+         String.split_on_char ',' intents |> List.map Intent.deserialise_intent *)
   | None -> failwith "runner died"
 
 let get_intents_and_players_zip (r : Runner.runner_option) (board : Board.t)
     (players : Player.t list) =
-    let (people, npcs) = List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players in
-    let people_intents = match r with
-      | Runner.WithController controller -> get_intents_from_manyarms controller board people
-      | Runner.NoController -> List.map (Player.get_intent board) people
-    in
-    let npcs_intents = List.map (fun p -> Player.get_intent board p) npcs in
-    let intents = people_intents @ npcs_intents in
-    let all_players = people @ npcs in 
-    List.combine all_players intents
+  let people, npcs =
+    List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players
+  in
+  let people_intents =
+    match r with
+    | Runner.WithController controller ->
+        get_intents_from_manyarms controller board people
+    | Runner.NoController -> List.map (Player.get_intent board) people
+  in
+  let npcs_intents = List.map (fun p -> Player.get_intent board p) npcs in
+  let intents = people_intents @ npcs_intents in
+  let all_players = people @ npcs in
+  List.combine all_players intents
 
 (* Step function with external runner support *)
 let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   let board = state.board in
   let players = state.players in
   let intents_and_players = get_intents_and_players_zip r board players in
-  let players' =
-    intents_and_players |> List.map (resolve_effect seed board)
-  in
+  let players' = intents_and_players |> List.map (resolve_effect seed board) in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
   let board' = Board_events.update_map_events gaia_config board in
@@ -142,46 +142,25 @@ let handle_events state =
   (* For now, do nothing *)
   state
 
-(* let step (seed : int) (state : t) =
-  (* Handle players and events *)
-  let state = handle_players state in
-  let state = handle_events state in
-
-  let board = state.board in
-  let players = state.players in
-  let intents = List.map (Player.get_intent board) players in
-  let players' =
-    List.combine players intents |> List.map (resolve_effect seed board)
-  in
-  (* Apply interactions between players *)
-  (* Apply board environmental events using Gaia's balanced configuration *)
-  let gaia_config = Gaia.get_adjusted_config state.gaia board in
-  let board' = Board_events.update_map_events gaia_config board in
-  let players'' = List.map (Player.step seed board') players' in
-
-  {
-    board = board';
-    players = players'';
-    gaia = state.gaia;
-    time = state.time + 1;
-  } *)
-
 let is_done (state : t) =
   List.for_all (fun player -> not player.Player.alive) state.players
 
 let string_of_board_and_players (state : t) =
   let board = state.board in
   let board_height, board_width = Board.dimensions board in
-  let player_counts = get_player_positions state in
+  let player_map = get_player_coordinate_map state.board state.players in
   let get_emoji (i, j) =
-    let n_players =
-      match Board.CoordinateMap.find_opt (i, j) player_counts with
-      | Some count -> count
-      | None -> 0
+    let land_emoji =
+      Board.get_cell board (i, j) |> land_type_to_str |> Pretty.bg 230
     in
-    if n_players > 1 then Pretty.bg 233 "👥"
-    else if n_players == 1 then Pretty.bg 130 "🧍"
-    else Board.get_cell board (i, j) |> land_type_to_str |> Pretty.bg 230
+    match Board.CoordinateMap.find_opt (i, j) player_map with
+    | Some count ->
+        let open Environment.PlayerSet in
+        if cardinal count > 1 then Pretty.bg 233 "👥"
+        else
+          let player = choose count in
+          Pretty.bg player.Player.color "🧍"
+    | None -> land_emoji
   in
   String.concat "\n"
     (List.init board_height (fun i ->
@@ -217,7 +196,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
         @@ List.map
              (fun p ->
                Printf.sprintf "%s %s %s"
-                 (Pretty.bg p.color (if p.alive then "🧍" else "😵"))
+                 (if p.alive then Pretty.bg p.color "🧍" else "😵")
                  (pad longest_name_len p.name)
                  (match p.last_intent with
                  | Some intent -> Move.to_string intent
@@ -239,5 +218,3 @@ let print_with_players state =
   print_newline ();
   state |> string_of_t |> print_endline;
   print_newline ()
-
-
