@@ -7,7 +7,7 @@ open Cmdliner.Term.Syntax
 (* Try changing this to 1, 2, or 3 to see different effects *)
 let initialise grid_size n_npcs =
   Random.self_init ();
-  let initial_board = Board.init_with_size (Random.int 10) grid_size in
+  let initial_board = Board.init ~grid_size:(Some grid_size) (Random.int 10) in
   let runner = Runner.init () in
   (* Adjust player count and names based on available assembly programs *)
   let player_names =

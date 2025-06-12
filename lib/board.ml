@@ -77,22 +77,20 @@ let step (_ : int) (b : t) : t =
   (* Board step is now handled by Board_events module called from game_state *)
   b
 
-let in_bounds (nrows : int) (ncols : int) (row : int) (col : int) : bool =
-  row >= 0 && row < nrows && col >= 0 && col < ncols
-
 let get_neighbours ?(include_self = false) (board : t) (row : int) (col : int) :
     (int * int) list =
-  let nrows, ncols = dimensions board in
-  let naive_indices =
-    List.map
-      (fun r -> List.map (fun c -> (r, c)) [ col - 1; col; col + 1 ])
-      [ row - 1; row; row + 1 ]
+  let indices =
+    List.flatten
+    @@ List.map
+         (fun r -> List.map (fun c -> (r, c)) [ col - 1; col; col + 1 ])
+         [ row - 1; row; row + 1 ]
   in
-  let naive_indices =
-    if include_self then (row, col) :: List.flatten naive_indices
-    else List.flatten naive_indices
+  let indices_maybe_without_self =
+    if not include_self then
+      List.filter (fun (r, c) -> r <> row || c <> col) indices
+    else indices
   in
-  List.filter (fun (r, c) -> in_bounds nrows ncols r c) naive_indices
+  List.map (Position.normalise (dimensions board)) indices_maybe_without_self
 
 (* Enhanced terrain generation with morphological operations *)
 let count_neighbors (board : t) (terrain_type : land_type) (row : int)
@@ -185,37 +183,9 @@ let generate_terrain_layer_local (board : t) (terrain_type : land_type)
   seed_terrain_local b terrain_type seed_count |> fun b ->
   dilate_local b terrain_type (* Just one dilation to grow the seeds slightly *)
 
-(* Function to initialize a board with specific terrain configuration *)
-let init_with_config (r : int) (config : terrain_config) : t =
-  Random.init r;
-
-  (* Start with all Open_land (grassland) *)
-  let board = Array.make_matrix config.board_rows config.board_cols Open_land in
-
-  (* Layer 1: Ocean/Rivers *)
-  let ocean_seeds =
-    config.ocean_seeds_min + Random.int config.ocean_seeds_range
-  in
-  let board = generate_terrain_layer_local board Ocean ocean_seeds in
-
-  (* Layer 2: Forests *)
-  let forest_seeds =
-    config.forest_seeds_min + Random.int config.forest_seeds_range
-  in
-  let board = generate_terrain_layer_local board Forest forest_seeds in
-
-  (* Layer 3: Lava *)
-  let lava_seeds = config.lava_seeds_min + Random.int config.lava_seeds_range in
-  let board = generate_terrain_layer_local board Lava lava_seeds in
-
-  board
-
-(* Function to initialize a board with default configuration *)
-let init (r : int) : t = init_with_config r default_terrain_config
-
-(* Enhanced initialization with configurable grid size and terrain config *)
-let init_with_size_and_config (r : int) (grid_size : int)
-    (config : terrain_config) : t =
+(* initialization with configurable grid size and terrain config *)
+let init ?(grid_size : int option = None)
+    ?(config : terrain_config = default_terrain_config) (r : int) : t =
   Random.init r;
 
   (* Start with all Open_land (grassland) *)
@@ -226,7 +196,9 @@ let init_with_size_and_config (r : int) (grid_size : int)
     config.ocean_seeds_min + Random.int config.ocean_seeds_range
   in
   let board =
-    generate_terrain_layer_with_size board Ocean ocean_seeds grid_size
+    match grid_size with
+    | Some sz -> generate_terrain_layer_with_size board Ocean ocean_seeds sz
+    | None -> generate_terrain_layer_local board Ocean ocean_seeds
   in
 
   (* Layer 2: Forests with configurable size *)
@@ -234,51 +206,23 @@ let init_with_size_and_config (r : int) (grid_size : int)
     config.forest_seeds_min + Random.int config.forest_seeds_range
   in
   let board =
-    generate_terrain_layer_with_size board Forest forest_seeds grid_size
+    match grid_size with
+    | Some sz -> generate_terrain_layer_with_size board Forest forest_seeds sz
+    | None -> generate_terrain_layer_local board Forest forest_seeds
   in
 
   (* Layer 3: Lava with configurable size *)
   let lava_seeds = config.lava_seeds_min + Random.int config.lava_seeds_range in
   let board =
-    generate_terrain_layer_with_size board Lava lava_seeds grid_size
+    match grid_size with
+    | Some sz -> generate_terrain_layer_with_size board Lava lava_seeds sz
+    | None -> generate_terrain_layer_local board Lava lava_seeds
   in
 
   board
 
-(* Enhanced initialization with configurable grid size using default config *)
-let init_with_size (r : int) (grid_size : int) : t =
-  init_with_size_and_config r grid_size default_terrain_config
-
-(* Function to print the board *)
-let print (b : t) : unit =
-  print_newline ();
-  Array.iter
-    (fun row ->
-      Array.iter (fun cell -> print_string (land_type_to_str cell)) row;
-      print_newline ())
-    b
-
-(* Function to print the board with emojis *)
-let print_with_emojis (b : t) : unit =
-  print_newline ();
-  Array.iter
-    (fun row ->
-      Array.iter (fun cell -> print_string (land_type_to_str cell)) row;
-      print_newline ())
-    b
-
 let get_cell (board : t) (location : int * int) =
-  let x_raw, y_raw = location in
-
-  let x_mod = Array.length board in
-  let y_mod = if Array.length board > 0 then Array.length board.(0) else 0 in
-
-  let rec make_pos ~period x =
-    if x >= 0 then x else make_pos ~period (x + period)
-  in
-  let x = make_pos ~period:x_mod x_raw mod x_mod in
-  let y = make_pos ~period:y_mod y_raw mod y_mod in
-
+  let x, y = Position.normalise (dimensions board) location in
   board.(x).(y)
 
 let rec find_safe_position (board : t) =
