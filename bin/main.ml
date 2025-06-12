@@ -57,11 +57,10 @@ let to_terminal grid_size n_players max_iterations =
   let full_game_history = initial_state :: (trajectory initial_state runner |> Seq.take max_iterations |> List.of_seq) in
   
   let game_history_list_rev =
-    List.rev full_game_history |> List.mapi
-      (fun i state ->
+    full_game_history |> List.mapi (fun i state ->
         Printf.printf "=== Iteration %d / %d ===\n" i max_iterations;
         Game_state.print_with_players state;
-        state)
+        state) |> List.rev
   in
   Runner.terminate runner;
 
