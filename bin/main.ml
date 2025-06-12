@@ -55,26 +55,17 @@ let to_terminal grid_size n_players max_iterations =
   Printf.printf "====================================\n\n";
 
   let initial_state, runner = initialise grid_size n_players in
-  let game_history =
-    trajectory initial_state runner |> Seq.take max_iterations
-  in
 
   print_string "\027[2J\027[H";
+  (* Add initial state to the beginning of the history *)
+  let full_game_history = initial_state :: (trajectory initial_state runner |> Seq.take max_iterations |> List.of_seq) in
+  
   let game_history_list_rev =
-    Seq.fold_lefti
-      (fun lst i state ->
-        Printf.printf "=== Iteration %d / %d ===\n" (i + 1) max_iterations;
+    List.rev full_game_history |> List.mapi
+      (fun i state ->
+        Printf.printf "=== Iteration %d / %d ===\n" i max_iterations;
         Game_state.print_with_players state;
-        if i mod 5 = 0 then (
-          let snapshot_filename =
-            Json_export.generate_filename
-              (Printf.sprintf "snapshot_iter_%d" i)
-              "json"
-          in
-          Json_export.save_game_state_json state snapshot_filename;
-          Printf.printf "Snapshot saved to %s\n" snapshot_filename);
-        state :: lst)
-      [] game_history
+        state)
   in
   Runner.terminate runner;
 
@@ -85,15 +76,10 @@ let to_terminal grid_size n_players max_iterations =
     print_endline "Simulation complete (all players died)!"
   else print_endline "Simulation complete (max iterations reached)!";
 
-  (* Save final game history and snapshot *)
-  let history_filename = Json_export.generate_filename "game_history" "json" in
-  let snapshot_filename =
-    Json_export.generate_filename "final_snapshot" "json"
-  in
-  Json_export.save_game_history_json game_history_list_rev history_filename;
-  Json_export.save_game_state_json final_state snapshot_filename;
-  Printf.printf "Game data saved to %s and %s\n" history_filename
-    snapshot_filename
+  (* Save complete game history to single JSON file *)
+  let complete_history_filename = Json_export.generate_filename "complete_simulation" "json" in
+  Json_export.save_game_history_json (List.rev game_history_list_rev) complete_history_filename;
+  Printf.printf "Complete simulation data saved to %s\n" complete_history_filename
 
 (* TUI code *)
 
