@@ -21,18 +21,18 @@ let player_in_bounds (board : Board.t) (player : Player.t) =
 
 (* A map from coordinates to sets of players at those coordinates *)
 let get_player_coordinate_map (board : Board.t) (players : Player.t list) :
-    Player.PlayerSet.t Board.CoordinateMap.t =
+    Player.Set.t Position.Map.t =
   List.fold_left
     (fun m player ->
       if player.Player.alive && player_in_bounds board player then
         let updated_players =
-          match Board.CoordinateMap.find_opt player.location m with
-          | None -> Player.PlayerSet.singleton player
-          | Some players -> Player.PlayerSet.add player players
+          match Position.Map.find_opt player.location m with
+          | None -> Player.Set.singleton player
+          | Some players -> Player.Set.add player players
         in
-        Board.CoordinateMap.add player.location updated_players m
+        Position.Map.add player.location updated_players m
       else m)
-    Board.CoordinateMap.empty players
+    Position.Map.empty players
 
 let resolve_effect (_ : int) (board : Board.t)
     ((player, intent) : Player.t * Move.t) =
@@ -169,18 +169,17 @@ let string_of_board_and_players (state : t) =
     let land_emoji =
       Board.get_cell board (i, j) |> land_type_to_str |> Pretty.bg 230
     in
-    match Board.CoordinateMap.find_opt (i, j) player_map with
+    match Position.Map.find_opt (i, j) player_map with
     | Some count ->
-        let open Player.PlayerSet in
-        if cardinal count > 1 then Pretty.bg 233 "👥"
+        if Player.Set.cardinal count > 1 then Pretty.bg 233 "👥"
         else
-          let player = choose count in
+          let player = Player.Set.choose count in
           Pretty.bg player.Player.color
             (match player.behavior with
-              | AssemblyRunner -> "🧍"
-              | Death_Plant -> "📛"
-              | KillerSnail -> "🐌"
-              | _ -> "？")
+            | AssemblyRunner -> "🧍"
+            | Death_Plant -> "📛"
+            | KillerSnail -> "🐌"
+            | _ -> "？")
     | None -> land_emoji
   in
   String.concat "\n"

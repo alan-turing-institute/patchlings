@@ -21,8 +21,8 @@ let behavior_to_json (b : Player.behavior) : t =
     | Player.KillerSnail -> "killer snail")
 
 (* JSON serialization for position set *)
-let position_set_to_json (positions : Player.PositionSet.t) : t =
-  let position_list = Player.PositionSet.elements positions in
+let position_set_to_json (positions : Position.Set.t) : t =
+  let position_list = Position.Set.elements positions in
   `List (List.map (fun (x, y) -> `List [ `Int x; `Int y ]) position_list)
 
 (* JSON serialization for player *)

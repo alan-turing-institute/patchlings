@@ -31,7 +31,7 @@ let update_player (player_1 : Player.t)
           List.fold_left
             (fun acc_player'' entity -> interact acc_player'' entity)
             acc_player'
-            (Player.PlayerSet.to_list cell.Environment.occupants))
+            (Player.Set.to_list cell.Environment.occupants))
         acc_player row)
     player_1 (* initial accumulator: your original player *)
     env (* the 2D array you’re traversing *)

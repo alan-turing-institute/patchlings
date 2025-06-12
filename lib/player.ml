@@ -8,15 +8,6 @@ type behavior =
   | Death_Plant
   | KillerSnail
 
-module PositionSet = Set.Make (struct
-  type t = int * int
-
-  let compare (a : t) (b : t) =
-    match compare (fst a) (fst b) with
-    | 0 -> compare (snd a) (snd b)
-    | cmp -> cmp
-end)
-
 (* type player_memory = String *)
 
 (* Get the memory of a player
@@ -34,7 +25,7 @@ type t = {
   location : int * int;
   behavior : behavior;
   age : int;
-  visited_tiles : PositionSet.t;
+  visited_tiles : Position.Set.t;
   last_intent : Move.t option;
   name : string;
   (* mem : player_memory; *)
@@ -43,7 +34,7 @@ type t = {
 
 let compare (a : t) (b : t) = compare a.id b.id
 
-module PlayerSet = Set.Make (struct
+module Set = Set.Make (struct
   (* Weird type definition because you can't write `type t = t` and have the
      latter `t` resolve to the scope above -- the compiler will complain that
      the type definition refers to itself. So, the first line here tells us
@@ -96,7 +87,7 @@ let init ?(start_id : int = 0) (names : string list) (board : Board.t)
         location = loc;
         behavior = behaviour;
         age = 0;
-        visited_tiles = PositionSet.singleton loc;
+        visited_tiles = Position.Set.singleton loc;
         last_intent = None;
         name = nm;
         color =
@@ -114,7 +105,7 @@ let update_stats player =
     player with
     age = (if player.alive then player.age + 1 else player.age);
     (* If the player is alive, update visited tiles *)
-    visited_tiles = PositionSet.add player.location player.visited_tiles;
+    visited_tiles = Position.Set.add player.location player.visited_tiles;
   }
 
 exception InvalidBehaviour of string

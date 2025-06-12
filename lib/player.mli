@@ -6,15 +6,13 @@ type behavior =
   | Death_Plant
   | KillerSnail
 
-module PositionSet : Set.S with type elt = int * int
-
 type t = {
   id : int;
   alive : bool;
   location : int * int;
   behavior : behavior;
   age : int;
-  visited_tiles : PositionSet.t;
+  visited_tiles : Position.Set.t;
   last_intent : Move.t option;
   name : string;
   color : int;
@@ -22,7 +20,7 @@ type t = {
 
 val compare : t -> t -> int
 
-module PlayerSet : Set.S with type elt = t
+module Set : Set.S with type elt = t
 
 val init : ?start_id:int -> string list -> Board.t -> behavior list -> t list
 val step : int -> Board.t -> t -> t

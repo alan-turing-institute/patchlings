@@ -1,10 +1,3 @@
-module Coordinate : sig
-  type t = int * int
-  val compare : t -> t -> int
-end
-
-module CoordinateMap : Map.S with type key = Coordinate.t
-
 type cell_state =
   | Bad
   | Good
