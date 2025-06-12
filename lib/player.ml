@@ -45,32 +45,6 @@ let compare (a : t) (b : t) = compare a.id b.id
 let colors_seq : int Seq.t =
   [ 19; 130; 70; 88; 57; 52; 164; 245; 143; 45 ] |> List.to_seq |> Seq.cycle
 
-let names_seq : string Seq.t =
-  let base_names =
-    [
-      "Ash";
-      "Sage";
-      "River";
-      "Storm";
-      "Blaze";
-      "Echo";
-      "Frost";
-      "Luna";
-      "Raven";
-      "Sky";
-    ]
-  in
-  let n = List.length base_names in
-  Seq.map
-    (fun i ->
-      let base_name = List.nth base_names (i mod n) in
-      let modifier = (i / n) + 1 in
-      let modifier_string =
-        if modifier == 1 then "" else string_of_int modifier
-      in
-      Printf.sprintf "%s%s" base_name modifier_string)
-    (Seq.ints 0)
-
 let string_of_behavior (b : behavior) =
   match b with
   | RandomWalk -> "random walk"
@@ -95,13 +69,9 @@ let find_safe_position (board : Board.t) =
   in
   try_position ()
 
-let init ?(names : string list option = None) ?(start_id : int = 0) (n_players : int)
+let init ?(start_id : int = 0) (names : string list) 
     (board : Board.t) (behaviours : behavior list) =
-  let names =
-    match names with
-    | Some ns when List.length ns = n_players -> ns
-    | _ -> Seq.take n_players names_seq |> List.of_seq
-  in
+  let n_players = List.length names in
   let colors = Seq.take n_players colors_seq |> List.of_seq in
   List.mapi
     (fun i (nm, clr) ->

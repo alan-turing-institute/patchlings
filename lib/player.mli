@@ -22,9 +22,8 @@ type t = {
 val compare : t -> t -> int
 
 val init :
-  ?names:string list option ->
   ?start_id:int ->
-  int ->
+  string list ->
   Board.t ->
   behavior list ->
   t list

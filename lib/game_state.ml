@@ -217,7 +217,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
                  (pad longest_name_len p.name)
                  (match p.last_intent with
                  | Some intent -> Move.to_string intent
-                 | None -> "No intent"))
+                 | None -> "None"))
              (PlayerSet.to_list ps))
       player_columns
   in

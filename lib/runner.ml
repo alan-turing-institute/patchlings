@@ -32,7 +32,6 @@ let init () =
     | Some n_str -> (
         try
           let n_programs = int_of_string n_str in
-          Printf.printf "Controller reports %d assembly programs available\n" n_programs;
           
           (* Read the player names *)
           let rec read_names acc count =
@@ -45,7 +44,6 @@ let init () =
                   List.rev acc
           in
           let player_names = read_names [] n_programs in
-          Printf.printf "Player names: %s\n" (String.concat ", " player_names);
           
           WithController { in_chan; out_chan; n_programs; player_names }
         with _ ->
