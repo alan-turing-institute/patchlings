@@ -1,7 +1,9 @@
 type behavior =
+  | AssemblyRunner
   | RandomWalk
   | CautiousWalk
   | Stationary
+  | Death_Plant
 
 module PositionSet : Set.S with type elt = int * int
 

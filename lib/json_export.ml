@@ -15,7 +15,9 @@ let behavior_to_json (b : Player.behavior) : t =
     (match b with
     | Player.RandomWalk -> "random_walk"
     | Player.CautiousWalk -> "cautious_walk"
-    | Player.Stationary -> "stationary")
+    | Player.Stationary -> "stationary"
+    | Player.Death_Plant -> "death plant"
+    | Player.AssemblyRunner -> "assembly player")
 
 (* JSON serialization for position set *)
 let position_set_to_json (positions : Player.PositionSet.t) : t =

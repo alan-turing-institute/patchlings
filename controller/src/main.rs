@@ -70,6 +70,7 @@ fn main() {
         }
 
         let inputs = inputs_of_buf(buf.clone());
+        eprintln!("Inputs: {:?}", inputs);
 
         let mut results: Vec<(String, Option<u8>)> = binary_paths
             .iter()

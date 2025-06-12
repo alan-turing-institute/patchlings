@@ -1,14 +1,18 @@
 open Board
 
 type behavior =
+  | AssemblyRunner
   | RandomWalk
   | CautiousWalk
   | Stationary
+  | Death_Plant
 
 module PositionSet = Set.Make (struct
   type t = int * int
 
-  let compare = compare
+  let compare (a : t) (b : t) = match compare (fst a) (fst b) with
+    | 0 -> compare (snd a) (snd b)
+    | cmp -> cmp
 end)
 
 type t = {
@@ -55,6 +59,8 @@ let string_of_behavior (b : behavior) =
   | RandomWalk -> "random walk"
   | CautiousWalk -> "cautious walk"
   | Stationary -> "stationary"
+  | Death_Plant -> "death plant"
+  | AssemblyRunner -> "assembly player"
 
 let get_random_behaviour (behaviours : behavior list) =
   let i = Random.int (List.length behaviours) in
@@ -120,6 +126,8 @@ let update_stats player =
     visited_tiles = PositionSet.add player.location player.visited_tiles;
   }
 
+exception InvalidBehaviour of string
+
 let step (_ : int) (board : Board.t) player =
   let updated_player = update_stats player in
   match land_type_to_cell_state (Board.get_cell board player.location) with
@@ -166,3 +174,5 @@ let get_intent (board : Board.t) (player : t) =
         let index = Random.int (List.length safe_directions) in
         List.nth safe_directions index
       else Intent.Stay
+  | Death_Plant ->Intent.Stay
+  | AssemblyRunner -> raise (InvalidBehaviour "AssemblyRunner behavior needs intent to be set by a runner, not get_intent")
