@@ -9,18 +9,21 @@ let initialise grid_size n_players =
   Random.self_init ();
   let initial_board = Board.init_with_size (Random.int 10) grid_size in
   let runner = Runner.init () in
-  (* Adjust player count based on available assembly programs *)
-  let actual_n_players = match Runner.get_n_programs runner with
-    | Some n -> 
+  (* Adjust player count and names based on available assembly programs *)
+  let actual_n_players, player_names = match (Runner.get_n_programs runner, Runner.get_player_names runner) with
+    | (Some n, Some names) -> 
         if n <> n_players then
           Printf.printf "Adjusting player count from %d to %d (based on available assembly programs)\n" n_players n;
-        n
-    | None -> n_players
+        (n, names)
+    | (Some n, None) -> 
+        Printf.printf "Using %d players with default names\n" n;
+        (n, [])
+    | (None, _) -> (n_players, [])
   in
   let behaviours =
     [ Player.RandomWalk; Player.CautiousWalk; Player.Stationary ]
   in
-  let test_players = Player.init actual_n_players initial_board behaviours in
+  let test_players = Player.init_with_names actual_n_players initial_board behaviours player_names in
   (Game_state.init initial_board test_players, runner)
 
 (* Generate a stream of game states, starting from an initial state, and

@@ -89,6 +89,29 @@ let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
       })
     names
 
+let init_with_names (n_players : int) (board : Board.t) (behaviours : behavior list) (custom_names : string list) =
+  let player_names = 
+    if List.length custom_names = n_players then
+      custom_names
+    else
+      (* Fall back to default names if custom names don't match player count *)
+      Seq.take n_players names |> List.of_seq
+  in
+  List.mapi
+    (fun i nm ->
+      let loc = find_safe_position board in
+      {
+        id = i;
+        alive = true;
+        location = loc;
+        behavior = get_random_behaviour behaviours;
+        age = 0;
+        visited_tiles = PositionSet.singleton loc;
+        last_intent = None;
+        name = nm;
+      })
+    player_names
+
 let update_stats player =
   {
     player with
