@@ -14,7 +14,7 @@ let default_event_config =
   {
     forest_death_chance = 0.05;
     forest_growth_chance = 0.05;
-    volcano_spawn_chance = 0.01;
+    volcano_spawn_chance = 0.001;
     volcano_clear_chance = 0.05;
     ocean_spread_chance = 0.02;
   }
@@ -33,40 +33,6 @@ let get_surrounding_land_counts (board : Board.t) (row : int) (col : int) =
       | None -> Some 1
       | Some count -> Some (count + 1)) acc
   ) LandTypeMap.empty neighbours
-
-(* Helper function to check if a position has adjacent ocean *)
-let has_adjacent_ocean (board : Board.t) (row : int) (col : int) : bool =
-  let rows, cols = Board.dimensions board in
-
-  (* Check all 8 adjacent positions *)
-  let rec check_positions positions =
-    match positions with
-    | [] -> false
-    | (dr, dc) :: rest ->
-        let nr = row + dr in
-        let nc = col + dc in
-        if
-          nr >= 0 && nr < rows && nc >= 0 && nc < cols
-          && Board.get_cell board (nr, nc) = Ocean
-        then true
-        else check_positions rest
-  in
-
-  let deltas =
-    [ (-1, -1); (-1, 0); (-1, 1); (0, -1); (0, 1); (1, -1); (1, 0); (1, 1) ]
-  in
-  check_positions deltas
-
-(* Helper function to copy board state *)
-let copy_board (board : Board.t) : Board.t =
-  let rows, cols = Board.dimensions board in
-  let empty_board = Board.init_empty rows cols in
-  for i = 0 to rows - 1 do
-    for j = 0 to cols - 1 do
-      Board.set_cell empty_board (i, j) (Board.get_cell board (i, j))
-    done
-  done;
-  empty_board
 
 let process_forest_death_cell (config : event_config) (board : Board.t) (row : int) (col : int) : Board.land_type =
   let cell = Board.get_cell board (row, col) in
@@ -92,6 +58,31 @@ let process_forest_growth_cell (config : event_config) (board : Board.t) (row : 
   )
   | x -> x
 
+(* Process ocean spreading - only to adjacent open spaces connected to existing oceans *)
+let process_ocean_spread_cell (config : event_config) (board : Board.t) (row : int) (col :
+  int) : Board.land_type =
+  (* Check if the cell is open land and has adjacent ocean *)
+  let cell = Board.get_cell board (row, col) in
+  match cell with
+  | Ocean -> Ocean
+  | Lava -> Lava
+  | x -> (
+    let neighbour_counts = get_surrounding_land_counts board row col in
+    let ocean_count = LandTypeMap.find_opt Ocean neighbour_counts |> Option.value ~default:0 in
+    if Random.float 1.0 < config.ocean_spread_chance *. float_of_int ocean_count then
+      Ocean
+    else
+      x
+  )
+
+(* Process volcano events (spawning and clearing) *)
+let process_volcano_events_cell (config : event_config) (board : Board.t) (row : int) (col : int) =
+  let cell = Board.get_cell board (row, col) in
+  match cell with
+  | Lava -> if Random.float 1.0 < config.volcano_clear_chance then Open_land else Lava
+  | Forest -> Forest
+  | x -> if Random.float 1.0 < config.volcano_spawn_chance then Lava else x
+
 let per_cell_processor cell_func =
   fun (config : event_config) (board : Board.t) -> 
     let rows, cols = Board.dimensions board in
@@ -99,48 +90,8 @@ let per_cell_processor cell_func =
 
 let process_forest_death = per_cell_processor process_forest_death_cell
 let process_forest_growth = per_cell_processor process_forest_growth_cell
-
-(* Process volcano events (spawning and clearing) *)
-let process_volcano_events (config : event_config) (board : Board.t) : Board.t =
-  let rows, cols = Board.dimensions board in
-  let result = copy_board board in
-
-  (* Process volcano events *)
-  for i = 0 to rows - 1 do
-    for j = 0 to cols - 1 do
-      let current = Board.get_cell board (i, j) in
-      match current with
-      | Lava ->
-          (* Volcano can clear with configured chance *)
-          if Random.float 1.0 < config.volcano_clear_chance then
-            Board.set_cell result (i, j) Open_land
-      | Ocean | Open_land ->
-          (* Can become volcano with configured chance *)
-          if Random.float 1.0 < config.volcano_spawn_chance then
-            Board.set_cell result (i, j) Lava
-      | Forest ->
-          (* Forest tiles don't spawn volcanoes *)
-          ()
-    done
-  done;
-  result
-
-(* Process ocean spreading - only to adjacent open spaces connected to existing oceans *)
-let process_ocean_spread (config : event_config) (board : Board.t) : Board.t =
-  let rows, cols = Board.dimensions board in
-  let result = copy_board board in
-
-  (* Check each open land that's adjacent to ocean *)
-  for i = 0 to rows - 1 do
-    for j = 0 to cols - 1 do
-      if
-        Board.get_cell board (i, j) = Open_land
-        && has_adjacent_ocean board i j
-        && Random.float 1.0 < config.ocean_spread_chance
-      then Board.set_cell result (i, j) Ocean
-    done
-  done;
-  result
+let process_ocean_spread = per_cell_processor process_ocean_spread_cell
+let process_volcano_events = per_cell_processor process_volcano_events_cell
 
 (* Type for event processing functions *)
 type event_processor = event_config -> Board.t -> Board.t
