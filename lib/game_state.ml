@@ -184,6 +184,9 @@ module IntMap = Map.Make (Int)
 module PlayerSet = Set.Make (Player)
 
 let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
+  let open Player in
+  (* Print just players, no npcs in legend. *)
+  (* If you want NPCs printed, remove the List.filter call at the end. *)
   let player_columns_map =
     Seq.fold_lefti
       (fun acc i player ->
@@ -192,10 +195,9 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
         | Some lst -> IntMap.add col (PlayerSet.add player lst) acc
         | None -> IntMap.add col (PlayerSet.singleton player) acc)
       IntMap.empty
-      (state.players |> List.to_seq)
+      (state.players |> List.filter (fun p -> p.behavior = AssemblyRunner) |> List.to_seq)
   in
   let player_columns = player_columns_map |> IntMap.bindings |> List.map snd in
-  let open Player in
   let player_column_strings =
     List.map
       (fun ps ->
@@ -211,7 +213,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
              (fun p ->
                Printf.sprintf "%s %s %s"
                  (if p.alive && (p.behavior = AssemblyRunner) then Pretty.bg p.color "🧍" 
-                 else if p.alive && (p.behavior = Death_Plant) then Pretty.bg p.color "📛" else "😵")
+                 else if p.alive && (p.behavior = Death_Plant) then "📛" else "😵")
                  (pad longest_name_len p.name)
                  (match p.last_intent with
                  | Some intent -> Move.to_string intent

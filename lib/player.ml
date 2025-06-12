@@ -76,16 +76,19 @@ let init ?(start_id : int = 0) (names : string list)
   List.mapi
     (fun i (nm, clr) ->
       let loc = find_safe_position board in
+      let behaviour' = get_random_behaviour behaviours in
       {
         id = i + start_id;
         alive = true;
         location = loc;
-        behavior = get_random_behaviour behaviours;
+        behavior = behaviour';
         age = 0;
         visited_tiles = PositionSet.singleton loc;
         last_intent = None;
         name = nm;
-        color = clr;
+        color = (if behaviour' = Death_Plant then 201 else clr);
+        (* Death_Plant has a special color, others use the assigned color *)
+        (* mem = 0L; *) (* Memory is not used in this version *)
       })
     (List.combine names colors)
 
