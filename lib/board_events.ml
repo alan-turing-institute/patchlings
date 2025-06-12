@@ -19,26 +19,20 @@ let default_event_config =
     ocean_spread_chance = 0.02;
   }
 
-(* Helper function to get adjacent open land positions *)
-let get_adjacent_open_positions (board : Board.t) (row : int) (col : int) :
-    (int * int) list =
-  let rows, cols = Board.dimensions board in
+module LandTypeMap = Map.Make(struct
+  type t = Board.land_type
+  let compare = compare
+end)
 
-  let positions = ref [] in
-
-  (* Check all 8 adjacent positions *)
-  for dr = -1 to 1 do
-    for dc = -1 to 1 do
-      if not (dr = 0 && dc = 0) then
-        let nr = row + dr in
-        let nc = col + dc in
-        if
-          nr >= 0 && nr < rows && nc >= 0 && nc < cols
-          && Board.get_cell board (nr, nc) = Open_land
-        then positions := (nr, nc) :: !positions
-    done
-  done;
-  !positions
+let get_surrounding_land_counts (board : Board.t) (row : int) (col : int) =
+  (* Use an association list to count adjacent land types *)
+  let steps = [(-1, -1); (-1, 0); (-1, 1); (0, -1); (0, 1); (1, -1); (1, 0); (1, 1)] in
+  let neighbours = steps |> List.map (fun step -> (fst step + row, snd step + col)) |> List.map (Board.get_cell board) in
+  List.fold_left (fun acc cell ->
+    LandTypeMap.update cell (function
+      | None -> Some 1
+      | Some count -> Some (count + 1)) acc
+  ) LandTypeMap.empty neighbours
 
 (* Helper function to check if a position has adjacent ocean *)
 let has_adjacent_ocean (board : Board.t) (row : int) (col : int) : bool =
@@ -74,21 +68,37 @@ let copy_board (board : Board.t) : Board.t =
   done;
   empty_board
 
-(* Process forest death events *)
-let process_forest_death (config : event_config) (board : Board.t) : Board.t =
-  let rows, cols = Board.dimensions board in
-  let result = copy_board board in
+let process_forest_death_cell (config : event_config) (board : Board.t) (row : int) (col : int) : Board.land_type =
+  let cell = Board.get_cell board (row, col) in
+  match cell with
+  | Forest -> (
+    if Random.float 1.0 < config.forest_death_chance then
+      Open_land
+    else
+      Forest
+  )
+  | x -> x
 
-  (* Process forest death *)
-  for i = 0 to rows - 1 do
-    for j = 0 to cols - 1 do
-      if
-        Board.get_cell board (i, j) = Forest
-        && Random.float 1.0 < config.forest_death_chance
-      then Board.set_cell result (i, j) Open_land
-    done
-  done;
-  result
+let process_forest_growth_cell (config : event_config) (board : Board.t) (row : int) (col : int) : Board.land_type =
+  let cell = Board.get_cell board (row, col) in
+  match cell with
+  | Open_land -> (
+    let neighbour_counts = get_surrounding_land_counts board row col in
+    let forest_count = LandTypeMap.find_opt Forest neighbour_counts |> Option.value ~default:0 in
+    if Random.float 1.0 < config.forest_growth_chance *. (1.0 +. float_of_int (min forest_count 4)) then
+      Forest
+    else
+      Open_land
+  )
+  | x -> x
+
+let per_cell_processor cell_func =
+  fun (config : event_config) (board : Board.t) -> 
+    let rows, cols = Board.dimensions board in
+    Array.init rows (fun row -> Array.init cols (cell_func config board row))
+
+let process_forest_death = per_cell_processor process_forest_death_cell
+let process_forest_growth = per_cell_processor process_forest_growth_cell
 
 (* Process volcano events (spawning and clearing) *)
 let process_volcano_events (config : event_config) (board : Board.t) : Board.t =
@@ -128,27 +138,6 @@ let process_ocean_spread (config : event_config) (board : Board.t) : Board.t =
         && has_adjacent_ocean board i j
         && Random.float 1.0 < config.ocean_spread_chance
       then Board.set_cell result (i, j) Ocean
-    done
-  done;
-  result
-
-(* Process forest growth separately to avoid conflicts *)
-let process_forest_growth (config : event_config) (board : Board.t) : Board.t =
-  let rows, cols = Board.dimensions board in
-  let result = copy_board board in
-
-  (* Check each forest for growth opportunity *)
-  for i = 0 to rows - 1 do
-    for j = 0 to cols - 1 do
-      if
-        Board.get_cell board (i, j) = Forest
-        && Random.float 1.0 < config.forest_growth_chance
-      then
-        let open_positions = get_adjacent_open_positions board i j in
-        if List.length open_positions > 0 then
-          let index = Random.int (List.length open_positions) in
-          let grow_row, grow_col = List.nth open_positions index in
-          Board.set_cell result (grow_row, grow_col) Forest
     done
   done;
   result

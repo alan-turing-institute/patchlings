@@ -21,9 +21,9 @@ let default_targets =
     (* 20% ocean *)
     forest_target = 0.30;
     (* 30% forest *)
-    lava_target = 0.05;
+    lava_target = 0.01;
     (* 5% lava *)
-    open_land_target = 0.45;
+    open_land_target = 0.49;
     (* 45% open land *)
   }
 

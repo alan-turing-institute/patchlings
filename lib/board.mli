@@ -18,7 +18,7 @@ type land_type =
 val land_type_to_str : land_type -> string
 val land_type_to_cell_state : land_type -> cell_state
 
-type t
+type t = land_type array array
 
 type terrain_config = {
   board_rows : int;
