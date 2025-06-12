@@ -1,31 +1,42 @@
 # Patchlings 2
 
+## Quick Start
+
+```bash
+make all        # Build everything (auto-installs dependencies)
+make run        # Run simulation with default settings
+make simulate   # Run simulation + generate visualization
 ```
+
+## Manual Setup
+
+If you prefer manual installation:
+
+```bash
 brew install opam                 # Install OCaml itself
 opam install . --deps-only -y     # Install project dependencies
 dune build                        # Build the project
+cd controller && cargo build --release  # Build Rust controller
 ```
 
-Then install Rust and then
+## Available Commands
 
-```
-cd controller
-cargo build --release
-```
-
-Then run the game with
-
-```
-dune exec patchlings -- -p 3
-```
-The `-- -p 3` sets the number of players in the simulation to be `3`. This must match the number of assembly programs in the `./asm` directory.
-
-To see command-line options, use
-
-```
-dune exec patchlings -- --help
+```bash
+make help                          # Show all available commands
+make run PLAYERS=5 ITERS=50       # Custom simulation settings
+make simulate TUI=true             # Run with TUI interface
+make visualize                     # Generate visualization from latest data
+make map                           # Generate maps using map_maker
+make clean                         # Clean all build artifacts
 ```
 
+## Command-line Options
+
+```bash
+dune exec patchlings -- --help    # Show all options
+dune exec patchlings -- -p 3      # Run with 3 players
+dune exec patchlings -- --tui     # Use TUI interface
+```
 
 -------------------------------------------------------------------------
 
@@ -60,6 +71,11 @@ The simulation will:
 
 ## Output Files
 
+### Simulation Data
+- `data/complete_simulation_[timestamp].json`: Complete simulation history with all iterations
+- `output_visuals/frame_XXX.png`: High-resolution visualization frames
+
+### Legacy Outputs  
 - `player_ages_over_time.png`: Line plot showing player survival over time
 - `player_unique_tiles.png`: Bar chart showing exploration patterns
 - `scripts/plot_line.py` and `scripts/plot_bar.py`: Generated Python plotting scripts
@@ -99,48 +115,43 @@ You can modify:
 
 The `map_maker/` directory contains a Python toolkit for generating detailed terrain maps for the simulation.
 
-### Prerequisites
+### Quick Usage
 
-Install Python dependencies:
 ```bash
-cd map_maker
-pip install -e .
+make map       # Generate complete map pipeline
+make visualize # Create visualization from simulation data
 ```
 
-### Usage
+### Manual Usage
 
-The map maker follows a 4-step pipeline:
+For manual control, the map maker follows a 4-step pipeline:
 
 1. **Generate Base Map** - Creates a procedural 40x40 terrain grid:
    ```bash
-   python py_script/make_base_map.py
+   cd map_maker && python py_script/make_base_map.py
    ```
-   - Creates `made_maps/base_map.csv` with water (0), grass (1), and forest (2)
-   - Uses smoothing algorithm to create natural terrain clusters
-   - Ensures forests don't touch water directly
 
 2. **Create Terrain Keys** - Converts base map to hex pattern keys:
    ```bash
-   python py_script/make_big_hex.py
+   cd map_maker && python py_script/make_big_hex.py
    ```
-   - Processes base map in 2x2 blocks to create terrain pattern keys
-   - Creates `made_maps/big_key.csv` with pattern identifiers (e.g., "ffff", "gwwg")
-   - Expands using 20x20 hex grids to create `made_maps/expanded_map.csv`
 
 3. **Generate Hex Patterns** - Converts pixel art to hex color grids:
    ```bash
-   python py_script/generate_hex.py
+   cd map_maker && python py_script/generate_hex.py
    ```
-   - Processes all PNG files in `pixel_image/` directory
-   - Converts RGB pixel data to hex color codes
-   - Creates corresponding CSV files in `hex_grid/` directory
 
 4. **Export to Image** - Creates final visualization:
    ```bash
-   python py_script/big_hex_to_image.py
+   cd map_maker && python py_script/big_hex_to_image.py
    ```
-   - Converts `made_maps/expanded_map.csv` to `made_maps/expanded_map.png`
-   - Creates high-resolution terrain visualization
+
+### Prerequisites
+
+Python dependencies are automatically installed with `make deps`, or manually:
+```bash
+cd map_maker && pip install -e .
+```
 
 ### Directory Structure
 
@@ -156,6 +167,30 @@ The map maker follows a 4-step pipeline:
 - **2** = Forest (f) - Dark green, safe terrain with resources
 
 Pattern keys combine 2x2 corner values (e.g., "fggw" = forest-grass-grass-water).
+
+## Visualization Pipeline
+
+The project includes a complete visualization system:
+
+1. **Simulation Data Export** - All iterations saved to `data/complete_simulation_[timestamp].json`
+2. **Frame Generation** - High-resolution frames created from simulation data using map_maker assets
+3. **Player Sprites** - Uses `map_maker/pixel_image/player.png` for player visualization
+4. **Terrain Rendering** - Converts simulation terrain to detailed 20x20 pixel art patterns
+
+Run `make simulate` to execute the complete pipeline: simulation → data export → visualization.
+
+## Dependencies
+
+### Automatic Setup
+```bash
+make deps  # Installs everything including git submodules
+```
+
+### Manual Setup
+- **OCaml**: `brew install opam && opam install . --deps-only -y`
+- **Rust**: Install from [rustup.rs](https://rustup.rs/)
+- **Python**: map_maker dependencies via `pip install -e map_maker/`
+- **Git Submodules**: `make submodules` (auto-clones map_maker if missing)
 
 ## License
 

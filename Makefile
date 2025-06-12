@@ -12,7 +12,7 @@ help:
 	@echo ""
 	@echo "Available targets:"
 	@echo "  all         - Initialize submodules and build everything (default)"
-	@echo "  submodules  - Initialize and update git submodules"
+	@echo "  submodules  - Initialize git submodules or clone missing dependencies"
 	@echo "  deps        - Install all dependencies"
 	@echo "  build       - Build OCaml and Rust components"
 	@echo "  ocaml       - Build only OCaml components"
@@ -54,16 +54,23 @@ install:
 
 # Initialize and update git submodules
 submodules:
-	@echo "Initializing git submodules..."
+	@echo "Checking git submodules..."
 	@if [ -f .gitmodules ]; then \
 		echo "Found .gitmodules file, initializing submodules..."; \
 		git submodule init; \
-		git submodule update; \
+		git submodule update --init --recursive; \
 	else \
 		echo "No .gitmodules file found."; \
-		if [ -d map_maker/.git ]; then \
-			echo "map_maker appears to be a separate git repository."; \
-			echo "Consider adding it as a submodule if needed."; \
+		if [ ! -d map_maker ] || [ ! -f map_maker/pyproject.toml ]; then \
+			echo "map_maker directory missing or incomplete."; \
+			echo "Attempting to clone map_maker as standalone repository..."; \
+			if [ -d map_maker ]; then rm -rf map_maker; fi; \
+			git clone https://github.com/AoifeHughes/map_maker.git map_maker; \
+		elif [ -d map_maker/.git ]; then \
+			echo "map_maker appears to be a separate git repository - updating..."; \
+			cd map_maker && git pull origin main 2>/dev/null || git pull origin master 2>/dev/null || echo "Could not update map_maker"; \
+		else \
+			echo "map_maker directory exists but is not a git repository."; \
 		fi; \
 	fi
 
