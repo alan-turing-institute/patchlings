@@ -79,10 +79,13 @@ let get_intents_from_manyarms ?(verbose : bool = false) (r : Runner.t)
   | None -> failwith "runner died"
 
 (* Step function with external runner support *)
-let step_with_runner (seed : int) (r : Runner.t) (state : t) =
+let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   let board = state.board in
   let players = state.players in
-  let intents = get_intents_from_manyarms r board players in
+  let intents = match r with
+    | Runner.WithController controller -> get_intents_from_manyarms controller board players
+    | Runner.NoController -> List.map (Player.get_intent board) players
+  in
 
   let players' =
     List.combine players intents |> List.map (resolve_effect seed board)

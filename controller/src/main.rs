@@ -44,6 +44,9 @@ fn main() {
         }
     }
 
+    // Send the number of players to the OCaml game
+    println!("{}", binary_paths.len());
+
     loop {
         let mut buf = String::new();
         io::stdin().read_line(&mut buf).unwrap();

@@ -7,7 +7,7 @@ type t = {
 
 val init : Board.t -> Player.t list -> t
 val step : int -> t -> t
-val step_with_runner : int -> Runner.t -> t -> t
+val step_with_runner : int -> Runner.runner_option -> t -> t
 val handle_players : t -> t
 val handle_events : t -> t
 
