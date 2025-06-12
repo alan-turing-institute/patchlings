@@ -187,7 +187,6 @@ let string_of_board_and_players (state : t) =
          String.concat "" (List.init board_width (fun j -> get_emoji (i, j)))))
 
 module IntMap = Map.Make (Int)
-module PlayerSet = Set.Make (Player)
 
 let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
   let open Player in
@@ -198,8 +197,8 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
       (fun acc i player ->
         let col = i mod n_columns in
         match IntMap.find_opt col acc with
-        | Some lst -> IntMap.add col (PlayerSet.add player lst) acc
-        | None -> IntMap.add col (PlayerSet.singleton player) acc)
+        | Some lst -> IntMap.add col (Player.Set.add player lst) acc
+        | None -> IntMap.add col (Player.Set.singleton player) acc)
       IntMap.empty
       (state.players
       |> List.filter (fun p -> p.behavior = AssemblyRunner)
@@ -210,7 +209,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
     List.map
       (fun ps ->
         let longest_name_len =
-          PlayerSet.fold (fun p acc -> max acc (String.length p.name)) ps 0
+          Player.Set.fold (fun p acc -> max acc (String.length p.name)) ps 0
         in
         let pad len name =
           let padding = String.make (len - String.length name) ' ' in
@@ -228,7 +227,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
                  (match p.last_intent with
                  | Some intent -> Move.to_string intent
                  | None -> "None"))
-             (PlayerSet.to_list ps))
+             (Player.Set.to_list ps))
       player_columns
   in
   Pretty.(hcat ~sep:"   " Start player_column_strings)
