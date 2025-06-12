@@ -1,15 +1,31 @@
 open Board
 
 type behavior =
+  | AssemblyRunner
   | RandomWalk
   | CautiousWalk
   | Stationary
+  | Death_Plant
 
 module PositionSet = Set.Make (struct
   type t = int * int
 
-  let compare = compare
+  let compare (a : t) (b : t) = match compare (fst a) (fst b) with
+    | 0 -> compare (snd a) (snd b)
+    | cmp -> cmp
 end)
+
+
+(* type player_memory = String *)
+
+(* Get the memory of a player
+let get_memory (player : t) =
+  (* player.mem is an int64, which is 8 bytes.
+     We will only use the first 7 bytes for the memory
+     The caller can _set_ the 8th byte artibrarily, but we
+     enforce limiting the memory to 7 bytes in this function.
+     *)
+  (player.mem lsr 8) lsl 8 *)
 
 type t = {
   id : int;
@@ -18,11 +34,16 @@ type t = {
   behavior : behavior;
   age : int;
   visited_tiles : PositionSet.t;
-  last_intent : Intent.t option;
+  last_intent : Move.t option;
   name : string;
+  (* mem : player_memory; *)
+  color : int; (* Background colour when printing grid square *)
 }
 
 let compare (a : t) (b : t) = compare a.id b.id
+
+let colors : int Seq.t =
+  [ 19; 130; 70; 88; 57; 52; 164; 245; 143; 45 ] |> List.to_seq |> Seq.cycle
 
 let names : string Seq.t =
   let base_names =
@@ -55,6 +76,8 @@ let string_of_behavior (b : behavior) =
   | RandomWalk -> "random walk"
   | CautiousWalk -> "cautious walk"
   | Stationary -> "stationary"
+  | Death_Plant -> "death plant"
+  | AssemblyRunner -> "assembly player"
 
 let get_random_behaviour (behaviours : behavior list) =
   let i = Random.int (List.length behaviours) in
@@ -74,8 +97,9 @@ let find_safe_position (board : Board.t) =
 
 let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
   let names = Seq.take n_players names |> List.of_seq in
+  let colors = Seq.take n_players colors |> List.of_seq in
   List.mapi
-    (fun i nm ->
+    (fun i (nm, clr) ->
       let loc = find_safe_position board in
       {
         id = i;
@@ -86,19 +110,21 @@ let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
         visited_tiles = PositionSet.singleton loc;
         last_intent = None;
         name = nm;
+        color = clr;
       })
-    names
+    (List.combine names colors)
 
-let init_with_names (n_players : int) (board : Board.t) (behaviours : behavior list) (custom_names : string list) =
-  let player_names = 
-    if List.length custom_names = n_players then
-      custom_names
+let init_with_names (n_players : int) (board : Board.t)
+    (behaviours : behavior list) (custom_names : string list) =
+  let player_names =
+    if List.length custom_names = n_players then custom_names
     else
       (* Fall back to default names if custom names don't match player count *)
       Seq.take n_players names |> List.of_seq
   in
+  let colors = Seq.take n_players colors |> List.of_seq in
   List.mapi
-    (fun i nm ->
+    (fun i (nm, clr) ->
       let loc = find_safe_position board in
       {
         id = i;
@@ -109,8 +135,9 @@ let init_with_names (n_players : int) (board : Board.t) (behaviours : behavior l
         visited_tiles = PositionSet.singleton loc;
         last_intent = None;
         name = nm;
+        color = clr;
       })
-    player_names
+    (List.combine player_names colors)
 
 let update_stats player =
   {
@@ -120,6 +147,8 @@ let update_stats player =
     visited_tiles = PositionSet.add player.location player.visited_tiles;
   }
 
+exception InvalidBehaviour of string
+
 let step (_ : int) (board : Board.t) player =
   let updated_player = update_stats player in
   match land_type_to_cell_state (Board.get_cell board player.location) with
@@ -128,9 +157,9 @@ let step (_ : int) (board : Board.t) player =
 
 (* Get the cell state in a given direction from player's position, with wrapping *)
 let get_cell_in_direction (board : Board.t) (player_pos : int * int)
-    (direction : Intent.t) =
+    (direction : Move.t) =
   let x, y = player_pos in
-  let dx, dy = Intent.to_delta direction in
+  let dx, dy = Move.to_delta direction in
   let height, width = Board.dimensions board in
 
   let new_x = (((x + dx) mod height) + height) mod height in
@@ -140,11 +169,11 @@ let get_cell_in_direction (board : Board.t) (player_pos : int * int)
 
 let get_intent (board : Board.t) (player : t) =
   match player.behavior with
-  | Stationary -> Intent.Stay
+  | Stationary -> Move.Stay
   | RandomWalk ->
       (* Random walk - choose only cardinal directions and Stay *)
       let directions =
-        [ Intent.North; Intent.South; Intent.East; Intent.West; Intent.Stay ]
+        [ Move.North; Move.South; Move.East; Move.West; Move.Stay ]
       in
       let index = Random.int (List.length directions) in
       List.nth directions index
@@ -158,11 +187,13 @@ let get_intent (board : Board.t) (player : t) =
             | Board.Forest -> true
             | Board.Ocean -> false
             | Board.Lava -> false)
-          [ Intent.North; Intent.South; Intent.East; Intent.West ]
+          [ Move.North; Move.South; Move.East; Move.West ]
       in
 
       (* If there are safe directions, pick one randomly; otherwise stay *)
       if List.length safe_directions > 0 then
         let index = Random.int (List.length safe_directions) in
         List.nth safe_directions index
-      else Intent.Stay
+      else Move.Stay
+  | Death_Plant ->Move.Stay
+  | AssemblyRunner -> raise (InvalidBehaviour "AssemblyRunner behavior needs intent to be set by a runner, not get_intent")

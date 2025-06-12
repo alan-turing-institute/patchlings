@@ -20,9 +20,7 @@ let initialise grid_size n_players =
         (n, [])
     | (None, _) -> (n_players, [])
   in
-  let behaviours =
-    [ Player.RandomWalk; Player.CautiousWalk; Player.Stationary ]
-  in
+  let behaviours = [ Player.AssemblyRunner;] in
   let test_players = Player.init_with_names actual_n_players initial_board behaviours player_names in
   (Game_state.init initial_board test_players, runner)
 
@@ -55,17 +53,14 @@ let to_terminal grid_size n_players max_iterations =
   Printf.printf "====================================\n\n";
 
   let initial_state, runner = initialise grid_size n_players in
-
-  print_string "\027[2J\027[H";
   (* Add initial state to the beginning of the history *)
   let full_game_history = initial_state :: (trajectory initial_state runner |> Seq.take max_iterations |> List.of_seq) in
   
   let game_history_list_rev =
-    List.rev full_game_history |> List.mapi
-      (fun i state ->
+    full_game_history |> List.mapi (fun i state ->
         Printf.printf "=== Iteration %d / %d ===\n" i max_iterations;
         Game_state.print_with_players state;
-        state)
+        state) |> List.rev
   in
   Runner.terminate runner;
 

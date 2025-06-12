@@ -26,4 +26,4 @@ This would mean that the first player is on a forest tile (`F`) surrounded by oc
 
 The first assembly program might then return, in its `x0` register, the value `.`, indicating it wants to stand still, and the second one might return `N`, indicating it wants to go North.
 
-The meanings of the return values are currently defined in `lib/intent.ml` and the meanings of the cell encodings in `lib/board.ml`, soon to be moved to `lib/environment.ml`.
+The meanings of the return values are currently defined in `lib/move.ml` and the meanings of the cell encodings in `lib/board.ml`, soon to be moved to `lib/environment.ml`.

@@ -6,7 +6,8 @@ type t = {
 }
 
 val init : Board.t -> Player.t list -> t
-val step : int -> t -> t
+val init_with_gaia : Board.t -> Player.t list -> Gaia.t -> t
+(* val step : int -> t -> t *)
 val step_with_runner : int -> Runner.runner_option -> t -> t
 val handle_players : t -> t
 val handle_events : t -> t
@@ -28,11 +29,4 @@ val string_of_t : t -> string
 val print_with_players : t -> unit
 (** [print_with_players state] prints the string representation of [state] *)
 
-val resolve_effect : int -> Board.t -> Player.t * Intent.t -> Player.t
-
-(* External runner functions *)
-val get_player_env : Board.t -> Player.t -> Board.land_type list
-val serialise_env : Board.land_type list -> bytes
-
-val get_intents_from_manyarms :
-  ?verbose:bool -> Runner.t -> Board.t -> Player.t list -> Intent.t list
+val resolve_effect : int -> Board.t -> Player.t * Move.t -> Player.t
