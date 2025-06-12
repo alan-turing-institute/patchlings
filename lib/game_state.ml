@@ -132,10 +132,10 @@ let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   let players = state.players in
   let intents_and_players = get_intents_and_players_zip r board players in
   let players' = intents_and_players |> List.map (resolve_effect seed board) in
-  let people, _npcs =
+  let people, npcs =
     List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players'
   in
-  let players'' = perform_interactions board people in
+  let players'' = perform_interactions board people @ npcs in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
   let board' = Board_events.update_map_events gaia_config board in
@@ -172,7 +172,8 @@ let string_of_board_and_players (state : t) =
         if cardinal count > 1 then Pretty.bg 233 "👥"
         else
           let player = choose count in
-          Pretty.bg player.Player.color "🧍"
+          Pretty.bg player.Player.color (if player.behavior = AssemblyRunner then "🧍" 
+          else if player.behavior = Death_Plant then "📛" else "？")
     | None -> land_emoji
   in
   String.concat "\n"
@@ -209,7 +210,8 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
         @@ List.map
              (fun p ->
                Printf.sprintf "%s %s %s"
-                 (if p.alive then Pretty.bg p.color "🧍" else "😵")
+                 (if p.alive && (p.behavior = AssemblyRunner) then Pretty.bg p.color "🧍" 
+                 else if p.alive && (p.behavior = Death_Plant) then Pretty.bg p.color "📛" else "😵")
                  (pad longest_name_len p.name)
                  (match p.last_intent with
                  | Some intent -> Move.to_string intent
