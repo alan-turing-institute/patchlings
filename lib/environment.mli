@@ -1,12 +1,12 @@
+module PlayerSet : Set.S with type elt = Player.t
+
 type environment_cell = {
   land_type: Board.land_type;
-  occupants: Player.t list;
+  occupants: PlayerSet.t;
 }
 
-type t = {
-  cells: environment_cell array array;
-}
+type t = environment_cell array array
 
-
-val get_player_env : Board.t -> Player.t -> Board.land_type list
-val serialise_env : Board.land_type list -> bytes
+val get_player_env : Board.t -> PlayerSet.t Board.CoordinateMap.t -> Player.t ->
+  environment_cell array array
+val serialise_env : t -> bytes

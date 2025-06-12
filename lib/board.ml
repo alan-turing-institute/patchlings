@@ -1,3 +1,14 @@
+module Coordinate = struct
+  type t = int * int
+
+  let compare a b =
+    match compare (fst a) (fst b) with
+    | 0 -> compare (snd a) (snd b)
+    | cmp -> cmp
+end
+
+module CoordinateMap = Map.Make (Coordinate)
+
 type land_type =
   | Ocean
   | Open_land

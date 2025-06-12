@@ -14,6 +14,29 @@ let init_with_gaia (board : Board.t) (players : Player.t list) (gaia : Gaia.t) :
 let init (board : Board.t) (players : Player.t list) : t =
   init_with_gaia board players (Gaia.create Gaia.default_targets)
 
+let player_in_bounds (board : Board.t) (player : Player.t) =
+  let height, width = Board.dimensions board in
+  let x, y = player.location in
+  x >= 0 && x < height && y >= 0 && y < width
+
+(* A map from coordinates to sets of players at those coordinates *)
+let get_player_coordinate_map (board : Board.t) (players : Player.t list) : Environment.PlayerSet.t Board.CoordinateMap.t =
+  List.fold_left
+    (fun m player ->
+      if player.Player.alive && player_in_bounds board player then
+        let updated_players =
+          match Board.CoordinateMap.find_opt player.location m with
+          | None -> Environment.PlayerSet.singleton player
+          | Some players -> Environment.PlayerSet.add player players
+        in
+        Board.CoordinateMap.add player.location updated_players m
+      else m)
+    Board.CoordinateMap.empty players
+ 
+let get_player_positions (state : t) : int Board.CoordinateMap.t =
+  let player_map = get_player_coordinate_map state.board state.players in
+  Board.CoordinateMap.map Environment.PlayerSet.cardinal player_map
+
 let resolve_effect (_ : int) (board : Board.t)
     ((player, intent) : Player.t * Intent.t) =
   let delta_x, delta_y = Intent.to_delta intent in
@@ -61,8 +84,9 @@ val interact_entities (player_1: Player.t) (player_2: player Player.t) =
 
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
+  let coord_map = get_player_coordinate_map board players in
   let env_bytes =
-    List.map (fun p -> Envinroment.serialise_env (Envinroment.get_player_env board p)) players
+    List.map (fun p -> Environment.serialise_env (Environment.get_player_env board coord_map p)) players
   in
   let to_write =
     String.cat (String.concat "," (List.map Bytes.to_string env_bytes)) ","
@@ -81,7 +105,7 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
 
 let get_intents_and_players_zip (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
-    let (npcs, people) = List.partition (fun p -> p.is_npc) players in
+    let (npcs, people) = List.partition (fun p -> p.Player.is_npc) players in
     let people_intents = get_intents_from_manyarms r board people in
     let npcs_intents = List.map (fun p -> Player.get_intent board p) npcs in
     let intents = people_intents @ npcs_intents in
@@ -142,49 +166,13 @@ let handle_events state =
 let is_done (state : t) =
   List.for_all (fun player -> not player.Player.alive) state.players
 
-module Coordinate = struct
-  type t = int * int
-
-  let compare a b =
-    match compare (fst a) (fst b) with
-    | 0 -> compare (snd a) (snd b)
-    | cmp -> cmp
-end
-
-module CoordinateMap = Map.Make (Coordinate)
-
-let player_in_bounds (board : Board.t) (player : Player.t) =
-  let height, width = Board.dimensions board in
-  let x, y = player.location in
-  x >= 0 && x < height && y >= 0 && y < width
-
-module PlayerSet = Set.Make (Player)
-
-(* A map from coordinates to sets of players at those coordinates *)
-let get_player_coordinate_map (state : t) : Player.t CoordinateMap.t =
-  List.fold_left
-    (fun m player ->
-      if player.Player.alive && player_in_bounds state.board player then
-        let updated_players =
-          match CoordinateMap.find_opt player.location m with
-          | None -> PlayerSet.singleton player
-          | Some players -> PlayerSet.add player players
-        in
-        CoordinateMap.add player.location updated_players m
-      else m)
-    CoordinateMap.empty state.players
- 
-let get_player_positions (state : t) : int CoordinateMap.t =
-  let player_map = get_player_coordinate_map state in
-  CoordinateMap.map PlayerSet.length player_map
-
 let string_of_board_and_players (state : t) =
   let board = state.board in
   let board_height, board_width = Board.dimensions board in
   let player_counts = get_player_positions state in
   let get_emoji (i, j) =
     let n_players =
-      match CoordinateMap.find_opt (i, j) player_counts with
+      match Board.CoordinateMap.find_opt (i, j) player_counts with
       | Some count -> count
       | None -> 0
     in
