@@ -172,7 +172,8 @@ let string_of_board_and_players (state : t) =
         if cardinal count > 1 then Pretty.bg 233 "👥"
         else
           let player = choose count in
-          Pretty.bg player.Player.color "🧍"
+          Pretty.bg player.Player.color (if player.behavior = AssemblyRunner then "🧍" 
+          else if player.behavior = Death_Plant then "📛" else "？")
     | None -> land_emoji
   in
   String.concat "\n"
@@ -209,7 +210,8 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
         @@ List.map
              (fun p ->
                Printf.sprintf "%s %s %s"
-                 (if p.alive then Pretty.bg p.color "🧍" else "😵")
+                 (if p.alive && (p.behavior = AssemblyRunner) then Pretty.bg p.color "🧍" 
+                 else if p.alive && (p.behavior = Death_Plant) then "📛" else "😵")
                  (pad longest_name_len p.name)
                  (match p.last_intent with
                  | Some intent -> Move.to_string intent
