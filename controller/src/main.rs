@@ -71,7 +71,7 @@ fn main() {
 
         let inputs = inputs_of_buf(buf.clone());
 
-        let mut results: Vec<(String, Option<u8>)> = binary_paths
+        let mut results: Vec<(String, Option<u64>)> = binary_paths
             .iter()
             .map(|(filename, path)| {
                 let input = inputs
@@ -84,16 +84,24 @@ fn main() {
 
         if debug {
             for (filename, result) in results {
-                println!("{:<20} -> {:?}", filename, result);
+                let res_str = match result {
+                    Some(res) => {
+                        let (action, memory) = split_result(res);
+                        format!("result: {:?} action {:?}: memory {:?}", result, action, memory)
+                    }
+                    None => String::from("None"),
+                };
+                println!("{:<20} -> {}", filename, res_str);
             }
         } else {
             results.sort_by_key(|(id, _)| {
                 u32::from_str_radix(id, 10).expect("asm file names must be ints")
             });
-            fn to_score(score_opt: &Option<u8>) -> String {
+            fn to_score(score_opt: &Option<u64>) -> String {
                 match score_opt {
                     None => String::from("_,"),
-                    Some(n) => format!("{},", *n as char),
+                    // Some(n) => format!("{},", *n as char),
+                    Some(n) => format!("{},", *n),
                 }
             }
             let out = results
@@ -102,6 +110,13 @@ fn main() {
             println!("{}", out.strip_suffix(",").unwrap());
         }
     }
+}
+
+fn split_result( result: u64) -> (u8, u64) {
+    // TODO: Check this
+    let action = (result >> 8) as u8;
+    let memory = result & 0xFFF;
+    (action, memory)
 }
 
 fn build_wrapper(
@@ -145,7 +160,7 @@ fn build_wrapper(
     Some(output_path)
 }
 
-fn run_wrapper(path: &Path, input: &str, debug: bool) -> Option<u8> {
+fn run_wrapper(path: &Path, input: &str, debug: bool) -> Option<u64> {
     let mut child = Command::new(path)
         .arg(input)
         .stdout(Stdio::piped())
@@ -158,7 +173,7 @@ fn run_wrapper(path: &Path, input: &str, debug: bool) -> Option<u8> {
         Some(status) if status.success() => {
             let mut stdout = String::new();
             child.stdout.as_mut()?.read_to_string(&mut stdout).ok()?;
-            stdout.trim().parse::<u8>().ok()
+            stdout.trim().parse::<u64>().ok()
         }
         Some(status) => {
             let mut stderr = String::new();

@@ -28,11 +28,13 @@ val string_of_t : t -> string
 val print_with_players : t -> unit
 (** [print_with_players state] prints the string representation of [state] *)
 
-val resolve_effect : int -> Board.t -> Player.t * Move.t -> Player.t
+val resolve_effect : int -> Board.t -> Player.t * string -> Player.t
+
+val resolve_move : int -> Board.t -> Player.t * Move.t -> Player.t
 
 (* External runner functions *)
 val get_player_env : Board.t -> Player.t -> Board.land_type list
 val serialise_env : Board.land_type list -> bytes
 
 val get_replies_from_manyarms :
-  ?verbose:bool -> Runner.t -> Board.t -> Player.t list -> Move.t list
+  ?verbose:bool -> Runner.t -> Board.t -> Player.t list -> string list

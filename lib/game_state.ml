@@ -10,9 +10,24 @@ type t = {
 let init (board : Board.t) (players : Player.t list) : t =
   { board; players; time = 0; gaia = Gaia.create Gaia.default_targets }
 
-let resolve_effect (_ : int) (board : Board.t)
-    ((player, intent) : Player.t * Move.t) =
-  let delta_x, delta_y = Move.to_delta intent in
+let split_reply (reply : string) =
+  (* return tuple with 
+    mem = first 7 bytes
+    intent = last byte *)
+
+    let len = String.length reply in
+    let mem, move = match len with
+    (* 1 = legacy reply length *)
+    | 1 -> ("abcdefg", reply)
+    | 8 -> (String.sub reply 0 7, String.sub reply 7 1)
+    | _ -> failwith "Invalid reply length"
+    in
+    (Move.deserialise_intent mem, move)
+
+
+let resolve_move (_ : int) (board : Board.t)
+    ((player, move) : Player.t * Move.t) =
+  let delta_x, delta_y = Move.to_delta move in
   let current_x, current_y = player.location in
 
   (* Get board dimensions for wrapping *)
@@ -26,8 +41,15 @@ let resolve_effect (_ : int) (board : Board.t)
   {
     player with
     Player.location = (new_x, new_y);
-    Player.last_intent = Some intent;
+    Player.last_intent = Some move;
   }
+
+let resolve_effect (_ : int) (board : Board.t)
+    ((player, reply) : Player.t * string) =
+  let move, new_mem = split_reply reply in
+  (* Ignore the new_mem for now *)
+  let _ = new_mem in
+  resolve_move 0 board (player, move)
 
 (* Functions for external runner support (pipe branch functionality) *)
 let get_player_env (board : Board.t) (player : Player.t) =
@@ -57,15 +79,7 @@ let serialise_env (env : Board.land_type list) =
   let c_list = List.map Board.serialise_land_type env in
   List.to_seq c_list |> Bytes.of_seq
 
-(* 
-let split_reply (reply : string) =
-  (* return tuple with 
-    mem = first 7 bytes
-    intent = last byte *)
-    let parts = String.to_bytes reply in
-    let mem = Bytes.sub_string parts 0 7 in
-    let intent = Bytes.get parts 7 in
-    (mem, intent) *)
+
 
 let get_replies_from_manyarms ?(verbose : bool = false) (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
@@ -84,8 +98,10 @@ let get_replies_from_manyarms ?(verbose : bool = false) (r : Runner.t) (board : 
   (* Read intents from the manyarms runner *)
   let maybe_replies = In_channel.input_line r.in_chan in
   match maybe_replies with
+  (* | Some replies ->
+      String.split_on_char ',' replies |> List.map Move.deserialise_intent *)
   | Some replies ->
-      String.split_on_char ',' replies |> List.map Move.deserialise_intent
+      String.split_on_char ',' replies
   | None -> failwith "runner died"
 
 
@@ -93,13 +109,19 @@ let get_replies_from_manyarms ?(verbose : bool = false) (r : Runner.t) (board : 
 let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   let board = state.board in
   let players = state.players in
-  let replies = match r with
+  (* let replies = match r with
     | Runner.WithController controller -> get_replies_from_manyarms controller board players
     | Runner.NoController -> List.map (Player.get_move board) players
-  in
+  in *)
 
   let players' =
-    List.combine players replies |> List.map (resolve_effect seed board)
+    match r with
+      | Runner.WithController controller ->
+          let replies = get_replies_from_manyarms controller board players in
+          List.combine players replies |> List.map (resolve_effect seed board)
+      | Runner.NoController -> 
+          let moves = List.map (Player.get_move board) players in
+          List.combine players moves |> List.map (resolve_move seed board)
   in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
@@ -127,9 +149,9 @@ let step (seed : int) (state : t) =
 
   let board = state.board in
   let players = state.players in
-  let replies = List.map (Player.get_move board) players in
+  let moves = List.map (Player.get_move board) players in
   let players' =
-    List.combine players replies |> List.map (resolve_effect seed board)
+    List.combine players moves |> List.map (resolve_move seed board)
   in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
