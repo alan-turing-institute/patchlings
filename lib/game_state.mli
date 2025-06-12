@@ -2,11 +2,13 @@ type t = {
   board : Board.t;
   players : Player.t list;
   time : int;
+  messages : string list;
   gaia : Gaia.t;
 }
 
 val init : Board.t -> Player.t list -> t
 val init_with_gaia : Board.t -> Player.t list -> Gaia.t -> t
+
 (* val step : int -> t -> t *)
 val step_with_runner : int -> Runner.runner_option -> t -> t
 val handle_players : t -> t

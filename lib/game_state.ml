@@ -4,15 +4,22 @@ type t = {
   board : Board.t;
   players : Player.t list;
   time : int;
+  messages : string list;
   gaia : Gaia.t;
 }
 
 let init_with_gaia (board : Board.t) (players : Player.t list) (gaia : Gaia.t) :
     t =
-  { board; players; time = 0; gaia }
+  { board; players; time = 0; messages = []; gaia }
 
 let init (board : Board.t) (players : Player.t list) : t =
-  { board; players; time = 0; gaia = Gaia.create Gaia.default_targets }
+  {
+    board;
+    players;
+    time = 0;
+    messages = [];
+    gaia = Gaia.create Gaia.default_targets;
+  }
 
 let player_in_bounds (board : Board.t) (player : Player.t) =
   let height, width = Board.dimensions board in
@@ -122,13 +129,18 @@ let get_intents_and_players_zip (state : t) (r : Runner.runner_option) =
 
 (* Perform interactions and return list of player characters *)
 let perform_interactions (board : Board.t) (players : Player.t list) :
-    Player.t list =
+    Player.t list * string list =
   let coord_player_map = get_player_coordinate_map board players in
-  List.map
-    (fun player ->
-      let env = Environment.get_player_env board coord_player_map player in
-      Interact.update_player player env)
-    players
+  let players_and_messages =
+    List.map
+      (fun player ->
+        let env = Environment.get_player_env board coord_player_map player in
+        Interact.update_player player env)
+      players
+  in
+  let players = List.map fst players_and_messages in
+  let messages = List.flatten @@ List.map snd players_and_messages in
+  (players, messages)
 
 (* Step function with external runner support *)
 let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
@@ -138,7 +150,7 @@ let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   (* let people, npcs =
        List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players'
      in *)
-  let players'' = perform_interactions board players' in
+  let players'', messages = perform_interactions board players' in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
   let board' = Board_events.update_map_events gaia_config board in
@@ -146,6 +158,7 @@ let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   {
     board = board';
     players = players''';
+    messages;
     gaia = state.gaia;
     time = state.time + 1;
   }

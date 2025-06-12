@@ -190,6 +190,9 @@ let run_tui grid_size n_npcs max_time =
     (* Render the game state and player statuses *)
     let game_state = get_game_state model in
     let board_and_players = Game_state.string_of_board_and_players game_state in
+    let messages =
+      Pretty.(game_state.Game_state.messages |> vcat Centre |> fg 202)
+    in
     let player_statuses = Game_state.table_of_player_statuses game_state in
     let info =
       if model.current_time >= max_time then
@@ -209,7 +212,8 @@ let run_tui grid_size n_npcs max_time =
             ])
     in
     Pretty.(
-      vcat Centre [ board_and_players; player_statuses; box ~padding:1 info ])
+      vcat Centre
+        [ board_and_players; player_statuses; messages; box ~padding:1 info ])
   in
   let app = Minttea.app ~init ~update ~view () in
   Minttea.start app ~initial_model
