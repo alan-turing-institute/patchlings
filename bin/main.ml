@@ -14,13 +14,13 @@ let initialise grid_size n_players =
     match (Runner.get_n_programs runner, Runner.get_player_names runner) with
     | Some n, Some names ->
         if n <> n_players then
-          Printf.printf
+          Printf.eprintf
             "Adjusting player count from %d to %d (based on available assembly \
              programs)\n"
             n_players n;
         (n, names)
     | Some n, None ->
-        Printf.printf "Using %d players with default names\n" n;
+        Printf.eprintf "Using %d players with default names\n" n;
         (n, [])
     | None, _ -> (n_players, [])
   in
@@ -38,9 +38,6 @@ let initialise grid_size n_players =
   in
   (* Combine test players and NPCs *)
   let all_players = test_players @ npcs in
-  prerr_endline
-  @@ Printf.sprintf "Initialising %d players with %d NPCs"
-       (List.length all_players) n_npcs;
   (* Print initial board and player information *)
   (Game_state.init initial_board all_players, runner)
 
