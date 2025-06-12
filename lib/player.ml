@@ -16,6 +16,7 @@ module PositionSet = Set.Make (struct
 end)
 
 type t = {
+  id : int;
   alive : bool;
   location : int * int;
   behavior : behavior;
@@ -25,44 +26,33 @@ type t = {
   name : string;
 }
 
-let compare a b =
-  match compare a.behavior b.behavior with
-  | 0 -> (match compare a.location b.location with
-          | 0 -> compare a.name b.name
-          | cmp -> cmp)
-  | cmp -> cmp
+let compare (a : t) (b : t) = compare a.id b.id
 
-(* List of 10 random names for players *)
-let random_names =
-  [
-    "Ash";
-    "Sage";
-    "River";
-    "Storm";
-    "Blaze";
-    "Echo";
-    "Frost";
-    "Luna";
-    "Raven";
-    "Sky";
-  ]
-
-(* Counter for assigning names *)
-let name_counter = ref 0
-
-(* Get the next available name *)
-let get_next_name () =
-  let base_name =
-    List.nth random_names (!name_counter mod List.length random_names)
+let names : string Seq.t =
+  let base_names =
+    [
+      "Ash";
+      "Sage";
+      "River";
+      "Storm";
+      "Blaze";
+      "Echo";
+      "Frost";
+      "Luna";
+      "Raven";
+      "Sky";
+    ]
   in
-  let name =
-    if !name_counter >= List.length random_names then
-      Printf.sprintf "%s%d" base_name
-        ((!name_counter / List.length random_names) + 1)
-    else base_name
-  in
-  incr name_counter;
-  name
+  let n = List.length base_names in
+  Seq.map
+    (fun i ->
+      let base_name = List.nth base_names (i mod n) in
+      let modifier = (i / n) + 1 in
+      let modifier_string =
+        if modifier == 1 then "" else string_of_int modifier
+      in
+      Printf.sprintf "%s%s" base_name modifier_string)
+    (Seq.ints 0)
 
 let string_of_behavior (b : behavior) =
   match b with
@@ -72,23 +62,61 @@ let string_of_behavior (b : behavior) =
   | Death_Plant -> "death plant"
   | AssemblyRunner -> "assembly player"
 
-let init_with_name (location : int * int) (behavior : behavior) (is_npc: bool) (name : string) 
-    =
-  {
-    alive = true;
-    location;
-    behavior;
-    age = 0;
-    visited_tiles = PositionSet.singleton location;
-    last_intent = None;
-    name;
-    is_npc;
-  }
+let get_random_behaviour (behaviours : behavior list) =
+  let i = Random.int (List.length behaviours) in
+  List.nth behaviours i
 
-let init (location : int * int) (behavior : behavior) (is_npc: bool) =
-  init_with_name location behavior is_npc (get_next_name ())
+let find_safe_position (board : Board.t) =
+  let height, width = Board.dimensions board in
+  let rec try_position () =
+    let x = Random.int height in
+    let y = Random.int width in
+    let pos = (x, y) in
+    match Board.get_cell board pos with
+    | Board.Open_land | Board.Forest -> pos
+    | _ -> try_position ()
+  in
+  try_position ()
 
-let reset_name_counter () = name_counter := 0
+let init (n_players : int) (board : Board.t) (behaviours : behavior list) =
+  let names = Seq.take n_players names |> List.of_seq in
+  List.mapi
+    (fun i nm ->
+      let loc = find_safe_position board in
+      {
+        id = i;
+        alive = true;
+        location = loc;
+        behavior = get_random_behaviour behaviours;
+        age = 0;
+        visited_tiles = PositionSet.singleton loc;
+        last_intent = None;
+        name = nm;
+      })
+    names
+
+let init_with_names (n_players : int) (board : Board.t) (behaviours : behavior list) (custom_names : string list) =
+  let player_names = 
+    if List.length custom_names = n_players then
+      custom_names
+    else
+      (* Fall back to default names if custom names don't match player count *)
+      Seq.take n_players names |> List.of_seq
+  in
+  List.mapi
+    (fun i nm ->
+      let loc = find_safe_position board in
+      {
+        id = i;
+        alive = true;
+        location = loc;
+        behavior = get_random_behaviour behaviours;
+        age = 0;
+        visited_tiles = PositionSet.singleton loc;
+        last_intent = None;
+        name = nm;
+      })
+    player_names
 
 let update_stats player =
   {
@@ -137,8 +165,7 @@ let get_intent (board : Board.t) (player : t) =
             | Board.Open_land -> true
             | Board.Forest -> true
             | Board.Ocean -> false
-            | Board.Lava -> false
-            | Board.Out_of_bounds -> false)
+            | Board.Lava -> false)
           [ Intent.North; Intent.South; Intent.East; Intent.West ]
       in
 

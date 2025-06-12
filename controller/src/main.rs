@@ -44,6 +44,19 @@ fn main() {
         }
     }
 
+    // Send the number of players and their names to the OCaml game
+    println!("{}", binary_paths.len());
+    
+    // Sort binary_paths by filename (numeric order)
+    binary_paths.sort_by_key(|(filename, _)| {
+        u32::from_str_radix(filename, 10).unwrap_or(0)
+    });
+    
+    // Send each player name on a separate line
+    for (filename, _) in &binary_paths {
+        println!("{}", filename);
+    }
+
     loop {
         let mut buf = String::new();
         io::stdin().read_line(&mut buf).unwrap();

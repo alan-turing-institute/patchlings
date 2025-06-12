@@ -9,38 +9,21 @@ let initialise grid_size n_players =
   Random.self_init ();
   let initial_board = Board.init_with_size (Random.int 10) grid_size in
   let runner = Runner.init () in
-
-  (* Create test players with different behaviors *)
-  (* Reset name counter to ensure consistent names *)
-  Player.reset_name_counter ();
-
-  (* Create 20 players with random positions and behaviors *)
-  let behaviors =
+  (* Adjust player count and names based on available assembly programs *)
+  let actual_n_players, player_names = match (Runner.get_n_programs runner, Runner.get_player_names runner) with
+    | (Some n, Some names) -> 
+        if n <> n_players then
+          Printf.printf "Adjusting player count from %d to %d (based on available assembly programs)\n" n_players n;
+        (n, names)
+    | (Some n, None) -> 
+        Printf.printf "Using %d players with default names\n" n;
+        (n, [])
+    | (None, _) -> (n_players, [])
+  in
+  let behaviours =
     [ Player.RandomWalk; Player.CautiousWalk; Player.Stationary ]
   in
-  let board_height, board_width = Board.dimensions initial_board in
-
-  (* Function to find a safe spawn position *)
-  let rec find_safe_position () =
-    let x = Random.int board_height in
-    let y = Random.int board_width in
-    let terrain = Board.get_cell initial_board (x, y) in
-    match terrain with
-    | Board.Open_land | Board.Forest -> (x, y) (* Safe positions *)
-    | Board.Ocean | Board.Lava | Board.Out_of_bounds ->
-        find_safe_position () (* Try again *)
-  in
-
-  let test_players =
-    List.init n_players (fun _ ->
-        (* Find a safe spawn position *)
-        let x, y = find_safe_position () in
-        (* Random behavior *)
-        let behavior =
-          List.nth behaviors (Random.int (List.length behaviors))
-        in
-        Player.init (x, y) behavior)
-  in
+  let test_players = Player.init_with_names actual_n_players initial_board behaviours player_names in
   (Game_state.init initial_board test_players, runner)
 
 (* Generate a stream of game states, starting from an initial state, and
@@ -55,6 +38,16 @@ let trajectory initial_state runner : Game_state.t Seq.t =
       Some (new_state, new_state)
   in
   Seq.unfold unfold_step initial_state
+
+let skip (iterations : int) initial_state runner : Game_state.t =
+  let rec _skip iterations state =
+    if iterations <= 0 || Game_state.is_done state then state
+    else
+      let seed = Random.int 1000 in
+      let new_state = Game_state.step_with_runner seed runner state in
+      _skip (iterations - 1) new_state
+  in
+  _skip iterations initial_state
 
 (* Run non-interactively, printing output to terminal *)
 let to_terminal grid_size n_players max_iterations =
@@ -112,26 +105,30 @@ type tui_state = {
 let run_tui grid_size n_players max_iterations =
   let open Minttea in
   (* let open Leaves in *)
-  let info_style =
-    Spices.(default |> faint true |> fg (color "245") |> build)
-  in
-
   let initial_state, runner = initialise grid_size n_players in
   let initial_model = { game_state = initial_state; current_iter = 0 } in
 
   let init _model = Command.Noop in
   let update event model =
-    match event with
-    | Event.KeyDown (Key "q") -> (model, Command.Quit)
-    | Event.KeyDown (Right | Key "n") ->
-        if model.current_iter >= max_iterations then (
-          print_endline "Maximum iterations reached!";
-          (model, Command.Quit))
-        else
-          let seed = Random.int 1000 in
-          let new_game_state =
-            Game_state.step_with_runner seed runner model.game_state
+    if model.current_iter > max_iterations then (
+      Runner.terminate runner;
+      (model, Command.Quit))
+    else
+      match event with
+      | Event.KeyDown (Key "q") ->
+          Runner.terminate runner;
+          (model, Command.Quit)
+      | Event.KeyDown (Key "s") ->
+          let new_game_state = skip 5 model.game_state runner in
+          let new_model =
+            {
+              game_state = new_game_state;
+              current_iter = model.current_iter + 5;
+            }
           in
+          (new_model, Command.Noop)
+      | Event.KeyDown (Right | Key "n") ->
+          let new_game_state = skip 1 model.game_state runner in
           let new_model =
             {
               game_state = new_game_state;
@@ -139,17 +136,38 @@ let run_tui grid_size n_players max_iterations =
             }
           in
           (new_model, Command.Noop)
-    | Event.KeyDown (Left | Key "p") ->
-        print_endline "Previous iteration (not implemented)";
-        (model, Command.Noop)
-    | _ -> (model, Command.Noop)
+      | Event.KeyDown (Left | Key "p") ->
+          print_endline "Previous iteration (not implemented)";
+          (model, Command.Noop)
+      | _ -> (model, Command.Noop)
   in
+
   let view model =
-    let info =
-      info_style "=== Iteration %d / %d === (->/n=next, q=quit)"
-        model.current_iter max_iterations
+    (* Render the game state and player statuses *)
+    let board_and_players =
+      Game_state.string_of_board_and_players model.game_state
     in
-    Format.sprintf "\n\n%s\n%s\n" (Game_state.string_of_t model.game_state) info
+    let player_statuses =
+      Game_state.table_of_player_statuses model.game_state
+    in
+    let info =
+      if model.current_iter > max_iterations then
+        Pretty.("Simulation complete :)" |> fg 28 |> bold)
+      else if Game_state.is_done model.game_state then
+        Pretty.("All players have died :(" |> fg 196 |> bold)
+      else
+        Pretty.(
+          vcat Centre
+            [
+              Pretty.bold
+                (Printf.sprintf "=== Iteration %d / %d ===" model.current_iter
+                   max_iterations);
+              Pretty.fg 93 "->/n: next   q: quit";
+              Pretty.fg 93 "   s: skip 5 iters  ";
+            ])
+    in
+    Pretty.(
+      vcat Centre [ board_and_players; player_statuses; box ~padding:1 info ])
   in
   let app = Minttea.app ~init ~update ~view () in
   Minttea.start app ~initial_model

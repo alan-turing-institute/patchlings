@@ -108,8 +108,8 @@ let process_volcano_events (config : event_config) (board : Board.t) : Board.t =
           (* Can become volcano with configured chance *)
           if Random.int 100 < config.volcano_spawn_chance then
             Board.set_cell result (i, j) Lava
-      | Forest | Out_of_bounds ->
-          (* Forest and out of bounds tiles don't spawn volcanoes *)
+      | Forest ->
+          (* Forest tiles don't spawn volcanoes *)
           ()
     done
   done;

@@ -14,7 +14,6 @@ type land_type =
   | Open_land
   | Forest
   | Lava
-  | Out_of_bounds
 
 val land_type_to_str : land_type -> string
 val land_type_to_cell_state : land_type -> cell_state
@@ -71,10 +70,6 @@ val dilate_n_times : t -> land_type -> int -> t
 val erode_n_times : t -> land_type -> int -> t
 (** [erode_n_times board terrain_type iterations] applies erosion [iterations] times. *)
 
-val count_neighbors_radius : t -> land_type -> int -> int -> int -> int
-(** [count_neighbors_radius board terrain_type row col radius] counts neighbors of [terrain_type] 
-    within [radius] distance from position (row, col). *)
-
 val print : t -> unit
 (** [print b] prints the board [b] in plain text format to the standard output. *)
 
@@ -83,10 +78,6 @@ val print_with_emojis : t -> unit
     Uses 🔥 for Bad cells and 🌱 for Good cells. *)
 
 val get_cell : t -> int * int -> land_type
-
-val observation : t -> int -> int -> int -> land_type array array
-(** [observation board x y size] returns a sub-array of size×size centered at (x, y).
-    If the observation window extends beyond the board boundaries, those cells are filled with Bad. *)
 
 val dimensions : t -> int * int
 (** [dimensions board] returns (height, width) of the board *)
@@ -98,3 +89,5 @@ val init_empty : int -> int -> t
 
 val set_cell : t -> int * int -> land_type -> unit
 (** [set_cell board (row, col) land_type] sets the cell at position (row, col) to the given land_type *)
+
+val find_safe_position : t -> int * int

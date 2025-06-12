@@ -8,6 +8,7 @@ type behavior =
 module PositionSet : Set.S with type elt = int * int
 
 type t = {
+  id: int;
   alive : bool;
   location : int * int;
   behavior : behavior;
@@ -15,13 +16,11 @@ type t = {
   visited_tiles : PositionSet.t;
   last_intent : Intent.t option;
   name : string;
-  is_npc : bool;
 }
 
-val init : int * int -> behavior -> bool -> t
-val init_with_name : int * int -> behavior -> bool -> string -> t
-val reset_name_counter : unit -> unit
+val compare : t -> t -> int
+val init : int -> Board.t -> behavior list -> t list
+val init_with_names : int -> Board.t -> behavior list -> string list -> t list
 val step : int -> Board.t -> t -> t
 val get_intent : Board.t -> t -> Intent.t
 val string_of_behavior : behavior -> string
-val compare : t -> t -> int

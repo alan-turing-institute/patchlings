@@ -14,7 +14,6 @@ type land_type =
   | Open_land
   | Forest
   | Lava
-  | Out_of_bounds
 
 let land_type_to_str (lt : land_type) : string =
   match lt with
@@ -22,7 +21,6 @@ let land_type_to_str (lt : land_type) : string =
   | Forest -> "🌲"
   | Lava -> "🌋"
   | Open_land -> "🌱"
-  | Out_of_bounds -> "⛔️"
 
 type cell_state =
   | Bad
@@ -34,7 +32,6 @@ let land_type_to_cell_state (lt : land_type) : cell_state =
   | Forest -> Good
   | Lava -> Bad
   | Open_land -> Good
-  | Out_of_bounds -> Bad
 
 let serialise_land_type (lt : land_type) =
   match lt with
@@ -42,9 +39,13 @@ let serialise_land_type (lt : land_type) =
   | Open_land -> 'P'
   | Forest -> 'F'
   | Lava -> 'L'
-  | Out_of_bounds -> 'X'
 
 type t = land_type array array
+
+let dimensions (board : t) : int * int =
+  let height = Array.length board in
+  let width = if height > 0 then Array.length board.(0) else 0 in
+  (height, width)
 
 (* Terrain generation configuration *)
 type terrain_config = {
@@ -87,109 +88,68 @@ let step (_ : int) (b : t) : t =
   (* Board step is now handled by Board_events module called from game_state *)
   b
 
+let in_bounds (nrows : int) (ncols : int) (row : int) (col : int) : bool =
+  row >= 0 && row < nrows && col >= 0 && col < ncols
+
+let get_neighbours ?(include_self = false) (board : t) (row : int) (col : int) :
+    (int * int) list =
+  let nrows, ncols = dimensions board in
+  let naive_indices =
+    List.map
+      (fun r -> List.map (fun c -> (r, c)) [ col - 1; col; col + 1 ])
+      [ row - 1; row; row + 1 ]
+  in
+  let naive_indices =
+    if include_self then (row, col) :: List.flatten naive_indices
+    else List.flatten naive_indices
+  in
+  List.filter (fun (r, c) -> in_bounds nrows ncols r c) naive_indices
+
 (* Enhanced terrain generation with morphological operations *)
-let count_neighbors_local (board : t) (terrain_type : land_type) (row : int)
+let count_neighbors (board : t) (terrain_type : land_type) (row : int)
     (col : int) : int =
-  let rows = Array.length board in
-  let cols = if rows > 0 then Array.length board.(0) else 0 in
-  let count = ref 0 in
-
-  for dr = -1 to 1 do
-    for dc = -1 to 1 do
-      if not (dr = 0 && dc = 0) then
-        let nr = row + dr in
-        let nc = col + dc in
-        if nr >= 0 && nr < rows && nc >= 0 && nc < cols then
-          if board.(nr).(nc) = terrain_type then incr count
-    done
-  done;
-  !count
-
-(* Count neighbors with configurable radius *)
-let count_neighbors_radius (board : t) (terrain_type : land_type) (row : int)
-    (col : int) (radius : int) : int =
-  let rows = Array.length board in
-  let cols = if rows > 0 then Array.length board.(0) else 0 in
-  let count = ref 0 in
-
-  for dr = -radius to radius do
-    for dc = -radius to radius do
-      if not (dr = 0 && dc = 0) then
-        let nr = row + dr in
-        let nc = col + dc in
-        if nr >= 0 && nr < rows && nc >= 0 && nc < cols then
-          if board.(nr).(nc) = terrain_type then incr count
-    done
-  done;
-  !count
+  get_neighbours board row col
+  |> List.filter (fun (r, c) -> board.(r).(c) = terrain_type)
+  |> List.length
 
 let dilate_local (board : t) (terrain_type : land_type) : t =
-  let rows = Array.length board in
-  let cols = if rows > 0 then Array.length board.(0) else 0 in
-  let result = Array.make_matrix rows cols Open_land in
-
-  (* Copy original board *)
-  for i = 0 to rows - 1 do
-    for j = 0 to cols - 1 do
-      result.(i).(j) <- board.(i).(j)
-    done
-  done;
-
-  (* Add terrain where neighbors exist *)
-  for i = 0 to rows - 1 do
-    for j = 0 to cols - 1 do
-      if board.(i).(j) = Open_land then
-        let neighbor_count = count_neighbors_local board terrain_type i j in
-        if neighbor_count >= 1 then result.(i).(j) <- terrain_type
-    done
-  done;
-  result
+  Array.mapi
+    (fun i row ->
+      Array.mapi
+        (fun j cell ->
+          if cell = Open_land then
+            let neighbour_count = count_neighbors board terrain_type i j in
+            if neighbour_count >= 1 then terrain_type else cell
+          else cell)
+        row)
+    board
 
 (* Erosion operation - removes isolated terrain *)
 let erode_local (board : t) (terrain_type : land_type) : t =
-  let rows = Array.length board in
-  let cols = if rows > 0 then Array.length board.(0) else 0 in
-  let result = Array.make_matrix rows cols Open_land in
-
-  (* Copy original board *)
-  for i = 0 to rows - 1 do
-    for j = 0 to cols - 1 do
-      result.(i).(j) <- board.(i).(j)
-    done
-  done;
-
-  (* Remove terrain where not enough neighbors *)
-  for i = 0 to rows - 1 do
-    for j = 0 to cols - 1 do
-      if board.(i).(j) = terrain_type then
-        let neighbor_count = count_neighbors_local board terrain_type i j in
-        if neighbor_count < 3 then
-          (* Need at least 3 neighbors to survive *)
-          result.(i).(j) <- Open_land
-    done
-  done;
-  result
+  Array.mapi
+    (fun i row ->
+      Array.mapi
+        (fun j cell ->
+          if cell = terrain_type then
+            let neighbour_count = count_neighbors board terrain_type i j in
+            if neighbour_count < 3 then Open_land else cell
+          else cell)
+        row)
+    board
 
 let seed_terrain_local (board : t) (terrain_type : land_type) (count : int) : t
     =
-  let rows = Array.length board in
-  let cols = if rows > 0 then Array.length board.(0) else 0 in
-  let result = Array.make_matrix rows cols Open_land in
-
-  (* Copy original board *)
-  for i = 0 to rows - 1 do
-    for j = 0 to cols - 1 do
-      result.(i).(j) <- board.(i).(j)
-    done
-  done;
-  (* Place random seeds *)
-  for _ = 1 to count do
-    let row = Random.int rows in
-    let col = Random.int cols in
-    result.(row).(col) <- terrain_type
-  done;
-
-  result
+  let nrows, ncols = dimensions board in
+  let indices_to_override =
+    List.init count (fun _ -> (Random.int nrows, Random.int ncols))
+  in
+  Array.mapi
+    (fun i row ->
+      Array.mapi
+        (fun j cell ->
+          if List.mem (i, j) indices_to_override then terrain_type else cell)
+        row)
+    board
 
 (* Multiple iterations of erosion/dilation *)
 let dilate_n_times (board : t) (terrain_type : land_type) (iterations : int) : t
@@ -332,23 +292,11 @@ let get_cell (board : t) (location : int * int) =
 
   board.(x).(y)
 
-let observation (board : t) (x : int) (y : int) (size : int) :
-    land_type array array =
-  let half_size = size / 2 in
-  let board_height = Array.length board in
-  let board_width = if board_height > 0 then Array.length board.(0) else 0 in
-
-  Array.init size (fun i ->
-      Array.init size (fun j ->
-          let row = x - half_size + i in
-          let col = y - half_size + j in
-
-          (* Check if coordinates are within board boundaries *)
-          if row >= 0 && row < board_height && col >= 0 && col < board_width
-          then board.(row).(col)
-          else Out_of_bounds (* Out of bounds cells are considered Bad *)))
-
-let dimensions (board : t) : int * int =
-  let height = Array.length board in
-  let width = if height > 0 then Array.length board.(0) else 0 in
-  (height, width)
+let rec find_safe_position (board : t) =
+  let board_height, board_width = dimensions board in
+  let x = Random.int board_height in
+  let y = Random.int board_width in
+  let terrain = get_cell board (x, y) in
+  match land_type_to_cell_state terrain with
+  | Good -> (x, y)
+  | Bad -> find_safe_position board

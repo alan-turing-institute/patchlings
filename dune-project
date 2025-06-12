@@ -19,7 +19,7 @@
  (name patchlings)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml (dune (= 3.18.2)) utop core yojson cmdliner minttea spices leaves)
+ (depends ocaml (dune (= 3.18.2)) utop core yojson cmdliner minttea spices leaves wcwidth)
  (tags
   (topics "to describe" your project)))
 
