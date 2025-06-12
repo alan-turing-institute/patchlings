@@ -151,7 +151,7 @@ let get_cell_in_direction (board : Board.t) (player_pos : int * int)
 
   Board.get_cell board (new_x, new_y)
 
-let get_intent (board : Board.t) (player : t) =
+let get_move (board : Board.t) (player : t) =
   match player.behavior with
   | Stationary -> Move.Stay
   | RandomWalk ->

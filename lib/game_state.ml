@@ -67,7 +67,7 @@ let split_reply (reply : string) =
     let intent = Bytes.get parts 7 in
     (mem, intent) *)
 
-let get_intents_from_manyarms ?(verbose : bool = false) (r : Runner.t) (board : Board.t)
+let get_replies_from_manyarms ?(verbose : bool = false) (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
   let env_bytes =
     List.map (fun p -> serialise_env (get_player_env board p)) players
@@ -86,12 +86,6 @@ let get_intents_from_manyarms ?(verbose : bool = false) (r : Runner.t) (board : 
   match maybe_replies with
   | Some replies ->
       String.split_on_char ',' replies |> List.map Move.deserialise_intent
-
-  (* let maybe_intents = In_channel.input_line r.in_chan in
-  match maybe_intents with
-  | Some intents ->
-      String.split_on_char ',' intents |> List.map Intent.deserialise_intent *)
-
   | None -> failwith "runner died"
 
 
@@ -99,13 +93,13 @@ let get_intents_from_manyarms ?(verbose : bool = false) (r : Runner.t) (board : 
 let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   let board = state.board in
   let players = state.players in
-  let intents = match r with
-    | Runner.WithController controller -> get_intents_from_manyarms controller board players
-    | Runner.NoController -> List.map (Player.get_intent board) players
+  let replies = match r with
+    | Runner.WithController controller -> get_replies_from_manyarms controller board players
+    | Runner.NoController -> List.map (Player.get_move board) players
   in
 
   let players' =
-    List.combine players intents |> List.map (resolve_effect seed board)
+    List.combine players replies |> List.map (resolve_effect seed board)
   in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
@@ -133,9 +127,9 @@ let step (seed : int) (state : t) =
 
   let board = state.board in
   let players = state.players in
-  let intents = List.map (Player.get_intent board) players in
+  let replies = List.map (Player.get_move board) players in
   let players' =
-    List.combine players intents |> List.map (resolve_effect seed board)
+    List.combine players replies |> List.map (resolve_effect seed board)
   in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in

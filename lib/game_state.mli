@@ -34,5 +34,5 @@ val resolve_effect : int -> Board.t -> Player.t * Move.t -> Player.t
 val get_player_env : Board.t -> Player.t -> Board.land_type list
 val serialise_env : Board.land_type list -> bytes
 
-val get_intents_from_manyarms :
+val get_replies_from_manyarms :
   ?verbose:bool -> Runner.t -> Board.t -> Player.t list -> Move.t list

@@ -20,5 +20,5 @@ val compare : t -> t -> int
 val init : int -> Board.t -> behavior list -> t list
 val init_with_names : int -> Board.t -> behavior list -> string list -> t list
 val step : int -> Board.t -> t -> t
-val get_intent : Board.t -> t -> Move.t
+val get_move : Board.t -> t -> Move.t
 val string_of_behavior : behavior -> string
