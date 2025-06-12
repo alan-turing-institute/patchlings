@@ -42,6 +42,7 @@ module Set = Set.Make (struct
      is `t'`. *)
   type t' = t
   type t = t'
+
   let compare = compare
 end)
 
@@ -131,7 +132,7 @@ let get_cell_in_direction (board : Board.t) (player_pos : int * int)
 
   Board.get_cell board (new_x, new_y)
 
-let get_intent (board : Board.t) (_people : t list) (time : int) (player : t) =
+let get_intent (board : Board.t) (people : t list) (time : int) (player : t) =
   match player.behavior with
   | Stationary -> Move.Stay
   | RandomWalk ->
@@ -161,13 +162,22 @@ let get_intent (board : Board.t) (_people : t list) (time : int) (player : t) =
       else Move.Stay
   | Death_Plant -> Move.Stay
   | KillerSnail ->
-      if time mod 3 = 0 then
-        (* TODO(penelopeysm): use players to get intent *)
-        let directions =
-          [ Move.North; Move.South; Move.East; Move.West; Move.Stay ]
+      if time mod 2 = 0 then
+        (* KillerSnail moves towards the nearest player every 3 turns *)
+        let pc_locations =
+          people
+          |> List.filter (fun p -> p.behavior == AssemblyRunner)
+          |> List.map (fun p -> p.location)
         in
-        let index = Random.int (List.length directions) in
-        List.nth directions index
+        let nearest_player_position =
+          Position.nearest_with_tile pc_locations (Board.dimensions board)
+            player.location
+        in
+        match nearest_player_position with
+        | None -> Move.Stay (* all players dead *)
+        | Some npp ->
+            (* Move towards the nearest player *)
+            Position.move_towards npp player.location
       else Move.Stay
   | AssemblyRunner ->
       raise
