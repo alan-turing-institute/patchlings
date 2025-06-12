@@ -117,6 +117,11 @@ let get_intents_and_players_zip (r : Runner.runner_option) (board : Board.t)
   let all_players = people @ npcs in
   List.combine all_players intents
 
+
+(* let perform_interactions (board : Board.t) (players : Player.t list) =
+  (* For now, we do not handle interactions between players *)
+  players *)
+
 (* Step function with external runner support *)
 let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   let board = state.board in
