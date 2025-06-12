@@ -26,7 +26,7 @@ type t = {
 }
 
 let compare a b =
-  match compare a.is_npc b.is_npc with
+  match compare a.behavior b.behavior with
   | 0 -> (match compare a.location b.location with
           | 0 -> compare a.name b.name
           | cmp -> cmp)
