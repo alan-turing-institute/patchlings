@@ -20,9 +20,7 @@ let initialise grid_size n_players =
         (n, [])
     | (None, _) -> (n_players, [])
   in
-  let behaviours =
-    [ Player.RandomWalk; Player.CautiousWalk; Player.Stationary ]
-  in
+  let behaviours = [ Player.AssemblyRunner;] in
   let test_players = Player.init_with_names actual_n_players initial_board behaviours player_names in
   (Game_state.init initial_board test_players, runner)
 
