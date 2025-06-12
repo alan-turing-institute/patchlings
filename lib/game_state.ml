@@ -211,7 +211,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
              (fun p ->
                Printf.sprintf "%s %s %s"
                  (if p.alive && (p.behavior = AssemblyRunner) then Pretty.bg p.color "🧍" 
-                 else if p.alive && (p.behavior = Death_Plant) then "📛" else "😵")
+                 else if p.alive && (p.behavior = Death_Plant) then Pretty.bg p.color "📛" else "😵")
                  (pad longest_name_len p.name)
                  (match p.last_intent with
                  | Some intent -> Move.to_string intent
