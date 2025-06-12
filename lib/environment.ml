@@ -1,14 +1,12 @@
-module PlayerSet = Set.Make (Player)
-
 type environment_cell = {
   land_type: Board.land_type;
-  occupants: PlayerSet.t;
+  occupants: Player.PlayerSet.t;
 }
 
 type t = environment_cell array array
 
 (* Functions for external runner support (pipe branch functionality) *)
-let get_player_env (board : Board.t) (coord_player_map : PlayerSet.t Board.CoordinateMap.t) (player : Player.t) =
+let get_player_env (board : Board.t) (coord_player_map : Player.PlayerSet.t Board.CoordinateMap.t) (player : Player.t) =
   let steps1d = [-1; 0; 1] in
   let steps2d = List.map (fun x -> List.map (fun y -> (x, y)) steps1d) steps1d in
   let loc = player.location in
@@ -19,8 +17,8 @@ let get_player_env (board : Board.t) (coord_player_map : PlayerSet.t Board.Coord
         let lt = Board.get_cell board adjacent_loc in
         let ps_opt = Board.CoordinateMap.find_opt adjacent_loc coord_player_map in
         let ps = match ps_opt with
-          | Some players -> PlayerSet.remove player players
-          | None -> PlayerSet.empty in
+          | Some players -> Player.PlayerSet.remove player players
+          | None -> Player.PlayerSet.empty in
         {land_type=lt; occupants=ps}
       )
     )

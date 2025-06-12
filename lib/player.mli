@@ -22,13 +22,9 @@ type t = {
 
 val compare : t -> t -> int
 
-val init :
-  ?start_id:int ->
-  string list ->
-  Board.t ->
-  behavior list ->
-  t list
+module PlayerSet : Set.S with type elt = t
 
+val init : ?start_id:int -> string list -> Board.t -> behavior list -> t list
 val step : int -> Board.t -> t -> t
 val get_intent : Board.t -> t list -> int -> t -> Move.t
 val string_of_behavior : behavior -> string

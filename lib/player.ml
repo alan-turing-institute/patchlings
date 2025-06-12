@@ -43,6 +43,17 @@ type t = {
 
 let compare (a : t) (b : t) = compare a.id b.id
 
+module PlayerSet = Set.Make (struct
+  (* Weird type definition because you can't write `type t = t` and have the
+     latter `t` resolve to the scope above -- the compiler will complain that
+     the type definition refers to itself. So, the first line here tells us
+     that `t'` is `Player.t`, and the second says that `t` in this module
+     is `t'`. *)
+  type t' = t
+  type t = t'
+  let compare = compare
+end)
+
 let colors_seq : int Seq.t =
   [ 19; 130; 70; 88; 57; 52; 164; 245; 143; 45 ] |> List.to_seq |> Seq.cycle
 

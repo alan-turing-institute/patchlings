@@ -21,14 +21,14 @@ let player_in_bounds (board : Board.t) (player : Player.t) =
 
 (* A map from coordinates to sets of players at those coordinates *)
 let get_player_coordinate_map (board : Board.t) (players : Player.t list) :
-    Environment.PlayerSet.t Board.CoordinateMap.t =
+    Player.PlayerSet.t Board.CoordinateMap.t =
   List.fold_left
     (fun m player ->
       if player.Player.alive && player_in_bounds board player then
         let updated_players =
           match Board.CoordinateMap.find_opt player.location m with
-          | None -> Environment.PlayerSet.singleton player
-          | Some players -> Environment.PlayerSet.add player players
+          | None -> Player.PlayerSet.singleton player
+          | Some players -> Player.PlayerSet.add player players
         in
         Board.CoordinateMap.add player.location updated_players m
       else m)
@@ -171,7 +171,7 @@ let string_of_board_and_players (state : t) =
     in
     match Board.CoordinateMap.find_opt (i, j) player_map with
     | Some count ->
-        let open Environment.PlayerSet in
+        let open Player.PlayerSet in
         if cardinal count > 1 then Pretty.bg 233 "👥"
         else
           let player = choose count in
