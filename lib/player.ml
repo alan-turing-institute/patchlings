@@ -15,6 +15,18 @@ module PositionSet = Set.Make (struct
     | cmp -> cmp
 end)
 
+
+(* type player_memory = String *)
+
+(* Get the memory of a player
+let get_memory (player : t) =
+  (* player.mem is an int64, which is 8 bytes.
+     We will only use the first 7 bytes for the memory
+     The caller can _set_ the 8th byte artibrarily, but we
+     enforce limiting the memory to 7 bytes in this function.
+     *)
+  (player.mem lsr 8) lsl 8 *)
+
 type t = {
   id : int;
   alive : bool;
@@ -22,8 +34,9 @@ type t = {
   behavior : behavior;
   age : int;
   visited_tiles : PositionSet.t;
-  last_intent : Intent.t option;
+  last_intent : Move.t option;
   name : string;
+  (* mem : player_memory; *)
 }
 
 let compare (a : t) (b : t) = compare a.id b.id
@@ -136,9 +149,9 @@ let step (_ : int) (board : Board.t) player =
 
 (* Get the cell state in a given direction from player's position, with wrapping *)
 let get_cell_in_direction (board : Board.t) (player_pos : int * int)
-    (direction : Intent.t) =
+    (direction : Move.t) =
   let x, y = player_pos in
-  let dx, dy = Intent.to_delta direction in
+  let dx, dy = Move.to_delta direction in
   let height, width = Board.dimensions board in
 
   let new_x = (((x + dx) mod height) + height) mod height in
@@ -148,11 +161,11 @@ let get_cell_in_direction (board : Board.t) (player_pos : int * int)
 
 let get_intent (board : Board.t) (player : t) =
   match player.behavior with
-  | Stationary -> Intent.Stay
+  | Stationary -> Move.Stay
   | RandomWalk ->
       (* Random walk - choose only cardinal directions and Stay *)
       let directions =
-        [ Intent.North; Intent.South; Intent.East; Intent.West; Intent.Stay ]
+        [ Move.North; Move.South; Move.East; Move.West; Move.Stay ]
       in
       let index = Random.int (List.length directions) in
       List.nth directions index
@@ -166,13 +179,13 @@ let get_intent (board : Board.t) (player : t) =
             | Board.Forest -> true
             | Board.Ocean -> false
             | Board.Lava -> false)
-          [ Intent.North; Intent.South; Intent.East; Intent.West ]
+          [ Move.North; Move.South; Move.East; Move.West ]
       in
 
       (* If there are safe directions, pick one randomly; otherwise stay *)
       if List.length safe_directions > 0 then
         let index = Random.int (List.length safe_directions) in
         List.nth safe_directions index
-      else Intent.Stay
-  | Death_Plant ->Intent.Stay
+      else Move.Stay
+  | Death_Plant ->Move.Stay
   | AssemblyRunner -> raise (InvalidBehaviour "AssemblyRunner behavior needs intent to be set by a runner, not get_intent")

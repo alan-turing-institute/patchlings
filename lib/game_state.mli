@@ -29,4 +29,4 @@ val string_of_t : t -> string
 val print_with_players : t -> unit
 (** [print_with_players state] prints the string representation of [state] *)
 
-val resolve_effect : int -> Board.t -> Player.t * Intent.t -> Player.t
+val resolve_effect : int -> Board.t -> Player.t * Move.t -> Player.t

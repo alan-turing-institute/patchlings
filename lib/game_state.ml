@@ -38,8 +38,8 @@ let get_player_positions (state : t) : int Board.CoordinateMap.t =
   Board.CoordinateMap.map Environment.PlayerSet.cardinal player_map
 
 let resolve_effect (_ : int) (board : Board.t)
-    ((player, intent) : Player.t * Intent.t) =
-  let delta_x, delta_y = Intent.to_delta intent in
+    ((player, intent) : Player.t * Move.t) =
+  let delta_x, delta_y = Move.to_delta intent in
   let current_x, current_y = player.location in
 
   (* Get board dimensions for wrapping *)
@@ -67,20 +67,15 @@ val interact_entities (player_1: Player.t) (player_2: player Player.t) =
   (* For now, just return both players unchanged *)
   (player_1, player_2) *)
 
-
-
-
-(* let get_intent (_: Board.t) (_: Player.t) =
-   (* Random walk - choose only cardinal directions (up/down/left/right) and Stay *)
-   let directions = [
-     Intent.North;  (* up *)
-     Intent.South;  (* down *)
-     Intent.East;   (* right *)
-     Intent.West;   (* left *)
-     Intent.Stay    (* no movement *)
-   ] in
-   let index = Random.int (List.length directions) in
-   List.nth directions index *)
+(* 
+let split_reply (reply : string) =
+  (* return tuple with 
+    mem = first 7 bytes
+    intent = last byte *)
+    let parts = String.to_bytes reply in
+    let mem = Bytes.sub_string parts 0 7 in
+    let intent = Bytes.get parts 7 in
+    (mem, intent) *)
 
 let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
     (players : Player.t list) =
@@ -96,10 +91,16 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
   Out_channel.output_string r.out_chan "\n";
   Out_channel.flush r.out_chan;
   (* Read intents from the manyarms runner *)
-  let maybe_intents = In_channel.input_line r.in_chan in
+  let maybe_replies = In_channel.input_line r.in_chan in
+  match maybe_replies with
+  | Some replies ->
+      String.split_on_char ',' replies |> List.map Move.deserialise_intent
+
+  (* let maybe_intents = In_channel.input_line r.in_chan in
   match maybe_intents with
   | Some intents ->
-      String.split_on_char ',' intents |> List.map Intent.deserialise_intent
+      String.split_on_char ',' intents |> List.map Intent.deserialise_intent *)
+
   | None -> failwith "runner died"
 
 let get_intents_and_players_zip (r : Runner.runner_option) (board : Board.t)
@@ -220,7 +221,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
                  (if p.alive then "🧍" else "☠️")
                  (pad longest_name_len p.name)
                  (match p.last_intent with
-                 | Some intent -> Intent.to_string intent
+                 | Some intent -> Move.to_string intent
                  | None -> "No intent"))
              (PlayerSet.to_list ps))
       player_columns
