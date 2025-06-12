@@ -55,8 +55,6 @@ let to_terminal grid_size n_players max_iterations =
   Printf.printf "====================================\n\n";
 
   let initial_state, runner = initialise grid_size n_players in
-
-  print_string "\027[2J\027[H";
   (* Add initial state to the beginning of the history *)
   let full_game_history = initial_state :: (trajectory initial_state runner |> Seq.take max_iterations |> List.of_seq) in
   

@@ -91,6 +91,9 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
   let to_write =
     String.cat (String.concat "," (List.map Bytes.to_string env_bytes)) ","
   in
+  prerr_endline "------- to_write -------";
+  prerr_endline to_write;
+  prerr_endline "------------------------";
   Out_channel.output_string r.out_chan to_write;
 
   Out_channel.output_string r.out_chan "\n";
