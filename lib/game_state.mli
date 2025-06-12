@@ -30,3 +30,5 @@ val print_with_players : t -> unit
 (** [print_with_players state] prints the string representation of [state] *)
 
 val resolve_effect : int -> Board.t -> Player.t * Move.t -> Player.t
+
+(* val get_player_coordinate_map : Board.t -> Player.t list -> Environment.PlayerSet.t Board.CoordinateMap.t *)

@@ -117,19 +117,32 @@ let get_intents_and_players_zip (r : Runner.runner_option) (board : Board.t)
   let all_players = people @ npcs in
   List.combine all_players intents
 
+(* Perform interactions and return list of player characters *)
+let perform_interactions (board: Board.t) (players: Player.t list) : Player.t list =
+  let coord_player_map = get_player_coordinate_map board players in
+  List.map
+    (fun player ->
+       let env = Environment.get_player_env board coord_player_map player in
+       Interact.update_player player env)
+    players
+
 (* Step function with external runner support *)
 let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   let board = state.board in
   let players = state.players in
   let intents_and_players = get_intents_and_players_zip r board players in
   let players' = intents_and_players |> List.map (resolve_effect seed board) in
+  let people, _npcs =
+    List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players'
+  in
+  let players'' = perform_interactions board people in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
   let board' = Board_events.update_map_events gaia_config board in
-  let players'' = List.map (Player.step seed board') players' in
+  let players''' = List.map (Player.step seed board') players'' in
   {
     board = board';
-    players = players'';
+    players = players''';
     gaia = state.gaia;
     time = state.time + 1;
   }
