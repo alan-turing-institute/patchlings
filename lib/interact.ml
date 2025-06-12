@@ -1,12 +1,31 @@
 let interact (player_1: Player.t) (player_2: Player.t) : Player.t =
+  Printf.printf
+    "interact: p1=(id=%d, beh=%s, alive=%b)  p2=(id=%d, beh=%s, alive=%b)\n%!"
+    player_1.id
+    (Player.string_of_behavior player_1.behavior)
+    player_1.alive
+    player_2.id
+    (Player.string_of_behavior player_2.behavior)
+    player_2.alive
+  ;
   match compare player_1 player_2 with
   | 0 -> player_1  (* Same player, no interaction *)
   | _ -> match (player_1.behavior, player_2.behavior) with
-    | (_, Death_Plant) -> let new_player = {
-        player_1 with
-        alive = false;
-      } in
-      new_player
+    | (_, Death_Plant) ->
+        Printf.printf "     p2 is Death_Plant: killing p1\n%!";
+        let dead = {
+          player_1 with
+          alive = false;
+          color = 0;
+          age   = 99999;
+        } in
+        Printf.printf
+          "     result: p1=(alive=%b, color=%d, age=%d)\n%!"
+          dead.alive
+          dead.color
+          dead.age
+        ;
+        dead
     | (_, _) -> player_1  (* No interaction defined for other behaviors *)
 
 
