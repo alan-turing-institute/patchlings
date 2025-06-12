@@ -11,8 +11,8 @@ let init (board : Board.t) (players : Player.t list) : t =
   { board; players; time = 0; gaia = Gaia.create Gaia.default_targets }
 
 let resolve_effect (_ : int) (board : Board.t)
-    ((player, intent) : Player.t * Intent.t) =
-  let delta_x, delta_y = Intent.to_delta intent in
+    ((player, intent) : Player.t * Move.t) =
+  let delta_x, delta_y = Move.to_delta intent in
   let current_x, current_y = player.location in
 
   (* Get board dimensions for wrapping *)
@@ -57,8 +57,18 @@ let serialise_env (env : Board.land_type list) =
   let c_list = List.map Board.serialise_land_type env in
   List.to_seq c_list |> Bytes.of_seq
 
-let get_intents_from_manyarms ?(verbose : bool = false) (r : Runner.t)
-    (board : Board.t) (players : Player.t list) =
+(* 
+let split_reply (reply : string) =
+  (* return tuple with 
+    mem = first 7 bytes
+    intent = last byte *)
+    let parts = String.to_bytes reply in
+    let mem = Bytes.sub_string parts 0 7 in
+    let intent = Bytes.get parts 7 in
+    (mem, intent) *)
+
+let get_intents_from_manyarms ?(verbose : bool = false) (r : Runner.t) (board : Board.t)
+    (players : Player.t list) =
   let env_bytes =
     List.map (fun p -> serialise_env (get_player_env board p)) players
   in
@@ -72,11 +82,18 @@ let get_intents_from_manyarms ?(verbose : bool = false) (r : Runner.t)
   Out_channel.flush r.out_chan;
   if verbose then prerr_endline "Sent envs to manyarms";
   (* Read intents from the manyarms runner *)
-  let maybe_intents = In_channel.input_line r.in_chan in
+  let maybe_replies = In_channel.input_line r.in_chan in
+  match maybe_replies with
+  | Some replies ->
+      String.split_on_char ',' replies |> List.map Move.deserialise_intent
+
+  (* let maybe_intents = In_channel.input_line r.in_chan in
   match maybe_intents with
   | Some intents ->
-      String.split_on_char ',' intents |> List.map Intent.deserialise_intent
+      String.split_on_char ',' intents |> List.map Intent.deserialise_intent *)
+
   | None -> failwith "runner died"
+
 
 (* Step function with external runner support *)
 let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
@@ -216,7 +233,7 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
                  (if p.alive then "🧍" else "☠️")
                  (pad longest_name_len p.name)
                  (match p.last_intent with
-                 | Some intent -> Intent.to_string intent
+                 | Some intent -> Move.to_string intent
                  | None -> "No intent"))
              (PlayerSet.to_list ps))
       player_columns

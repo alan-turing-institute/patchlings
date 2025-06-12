@@ -40,3 +40,4 @@ venv
 wrapper/target
 *.swp
 build
+*.pyc
