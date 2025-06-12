@@ -194,4 +194,6 @@ make deps  # Installs everything including git submodules
 
 ## License
 
-This project is open source. See the license file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2025 The Alan Turing Institute
