@@ -16,8 +16,9 @@ cargo build --release
 Then run the game with
 
 ```
-dune exec patchlings
+dune exec patchlings -- -p 3
 ```
+The `-- -p 3` sets the number of players in the simulation to be `3`. This must match the number of assembly programs in the `./asm` directory.
 
 To see command-line options, use
 
