@@ -2,6 +2,13 @@ open Patchlings
 open Cmdliner
 open Cmdliner.Term.Syntax
 
+
+let initialise_npcs (n_npcs: int) (board: Board.t) =
+  (* Initialize NPCs with default behaviors and names *)
+  let behaviours = Array.to_list (Array.make n_npcs Player.Death_Plant) in
+  let player_names = Array.to_list (Array.make n_npcs "MERCHANT OF DEATH") in
+  Player.init_with_names n_npcs board behaviours player_names
+
 (* Initialize game state with a board and some test players *)
 (* Use different grid sizes to demonstrate terrain grouping *)
 (* Try changing this to 1, 2, or 3 to see different effects *)
@@ -29,7 +36,12 @@ let initialise grid_size n_players =
     Player.init_with_names actual_n_players initial_board behaviours
       player_names
   in
-  (Game_state.init initial_board test_players, runner)
+  let n_npcs = Random.int 5 + 1 in
+  let npcs = initialise_npcs n_npcs initial_board in
+  (* Combine test players and NPCs *)
+  let all_players = test_players @ npcs in
+  (* Print initial board and player information *)
+  (Game_state.init initial_board all_players, runner)
 
 (* Generate a stream of game states, starting from an initial state, and
    proceeding until the game is done. The resulting trajectory does *not*
