@@ -4,6 +4,7 @@ type behavior =
   | CautiousWalk
   | Stationary
   | Death_Plant
+  | KillerSnail
 
 module PositionSet : Set.S with type elt = int * int
 
@@ -29,5 +30,5 @@ val init :
   t list
 
 val step : int -> Board.t -> t -> t
-val get_intent : Board.t -> t -> Move.t
+val get_intent : Board.t -> t list -> int -> t -> Move.t
 val string_of_behavior : behavior -> string

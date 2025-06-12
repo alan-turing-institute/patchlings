@@ -17,7 +17,8 @@ let behavior_to_json (b : Player.behavior) : t =
     | Player.CautiousWalk -> "cautious_walk"
     | Player.Stationary -> "stationary"
     | Player.Death_Plant -> "death plant"
-    | Player.AssemblyRunner -> "assembly player")
+    | Player.AssemblyRunner -> "assembly player"
+    | Player.KillerSnail -> "killer snail")
 
 (* JSON serialization for position set *)
 let position_set_to_json (positions : Player.PositionSet.t) : t =

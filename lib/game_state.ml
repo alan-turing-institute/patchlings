@@ -101,8 +101,10 @@ let get_intents_from_manyarms (r : Runner.t) (board : Board.t)
          String.split_on_char ',' intents |> List.map Intent.deserialise_intent *)
   | None -> failwith "runner died"
 
-let get_intents_and_players_zip (r : Runner.runner_option) (board : Board.t)
-    (players : Player.t list) =
+let get_intents_and_players_zip (state : t) (r : Runner.runner_option) =
+  let players = state.players in
+  let board = state.board in
+  let time = state.time in
   let people, npcs =
     List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players
   in
@@ -110,31 +112,32 @@ let get_intents_and_players_zip (r : Runner.runner_option) (board : Board.t)
     match r with
     | Runner.WithController controller ->
         get_intents_from_manyarms controller board people
-    | Runner.NoController -> List.map (Player.get_intent board) people
+    | Runner.NoController ->
+        List.map (Player.get_intent board people time) people
   in
-  let npcs_intents = List.map (fun p -> Player.get_intent board p) npcs in
+  let npcs_intents = List.map (Player.get_intent board people time) npcs in
   let intents = people_intents @ npcs_intents in
   let all_players = people @ npcs in
   List.combine all_players intents
 
 (* Perform interactions and return list of player characters *)
-let perform_interactions (board: Board.t) (players: Player.t list) : Player.t list =
+let perform_interactions (board : Board.t) (players : Player.t list) :
+    Player.t list =
   let coord_player_map = get_player_coordinate_map board players in
   List.map
     (fun player ->
-       let env = Environment.get_player_env board coord_player_map player in
-       Interact.update_player player env)
+      let env = Environment.get_player_env board coord_player_map player in
+      Interact.update_player player env)
     players
 
 (* Step function with external runner support *)
 let step_with_runner (seed : int) (r : Runner.runner_option) (state : t) =
   let board = state.board in
-  let players = state.players in
-  let intents_and_players = get_intents_and_players_zip r board players in
+  let intents_and_players = get_intents_and_players_zip state r in
   let players' = intents_and_players |> List.map (resolve_effect seed board) in
   (* let people, npcs =
-    List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players'
-  in *)
+       List.partition (fun p -> p.Player.behavior = Player.AssemblyRunner) players'
+     in *)
   let players'' = perform_interactions board players' in
   (* Apply board environmental events using Gaia's balanced configuration *)
   let gaia_config = Gaia.get_adjusted_config state.gaia board in
@@ -172,8 +175,12 @@ let string_of_board_and_players (state : t) =
         if cardinal count > 1 then Pretty.bg 233 "👥"
         else
           let player = choose count in
-          Pretty.bg player.Player.color (if player.behavior = AssemblyRunner then "🧍" 
-          else if player.behavior = Death_Plant then "📛" else "？")
+          Pretty.bg player.Player.color
+            (match player.behavior with
+              | AssemblyRunner -> "🧍"
+              | Death_Plant -> "📛"
+              | KillerSnail -> "🐌"
+              | _ -> "？")
     | None -> land_emoji
   in
   String.concat "\n"
@@ -195,7 +202,9 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
         | Some lst -> IntMap.add col (PlayerSet.add player lst) acc
         | None -> IntMap.add col (PlayerSet.singleton player) acc)
       IntMap.empty
-      (state.players |> List.filter (fun p -> p.behavior = AssemblyRunner) |> List.to_seq)
+      (state.players
+      |> List.filter (fun p -> p.behavior = AssemblyRunner)
+      |> List.to_seq)
   in
   let player_columns = player_columns_map |> IntMap.bindings |> List.map snd in
   let player_column_strings =
@@ -212,8 +221,10 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
         @@ List.map
              (fun p ->
                Printf.sprintf "%s %s %s"
-                 (if p.alive && (p.behavior = AssemblyRunner) then Pretty.bg p.color "🧍" 
-                 else if p.alive && (p.behavior = Death_Plant) then "📛" else "😵")
+                 (if p.alive && p.behavior = AssemblyRunner then
+                    Pretty.bg p.color "🧍"
+                  else if p.alive && p.behavior = Death_Plant then "📛"
+                  else "😵")
                  (pad longest_name_len p.name)
                  (match p.last_intent with
                  | Some intent -> Move.to_string intent

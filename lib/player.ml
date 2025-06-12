@@ -6,6 +6,7 @@ type behavior =
   | CautiousWalk
   | Stationary
   | Death_Plant
+  | KillerSnail
 
 module PositionSet = Set.Make (struct
   type t = int * int
@@ -52,6 +53,7 @@ let string_of_behavior (b : behavior) =
   | Stationary -> "stationary"
   | Death_Plant -> "death plant"
   | AssemblyRunner -> "assembly player"
+  | KillerSnail -> "killer snail"
 
 let get_random_behaviour (behaviours : behavior list) =
   let i = Random.int (List.length behaviours) in
@@ -69,26 +71,30 @@ let find_safe_position (board : Board.t) =
   in
   try_position ()
 
-let init ?(start_id : int = 0) (names : string list) 
-    (board : Board.t) (behaviours : behavior list) =
+let init ?(start_id : int = 0) (names : string list) (board : Board.t)
+    (behaviours : behavior list) =
   let n_players = List.length names in
   let colors = Seq.take n_players colors_seq |> List.of_seq in
   List.mapi
     (fun i (nm, clr) ->
       let loc = find_safe_position board in
-      let behaviour' = get_random_behaviour behaviours in
+      let behaviour = get_random_behaviour behaviours in
       {
         id = i + start_id;
         alive = true;
         location = loc;
-        behavior = behaviour';
+        behavior = behaviour;
         age = 0;
         visited_tiles = PositionSet.singleton loc;
         last_intent = None;
         name = nm;
-        color = (if behaviour' = Death_Plant then 201 else clr);
-        (* Death_Plant has a special color, others use the assigned color *)
-        (* mem = 0L; *) (* Memory is not used in this version *)
+        color =
+          (match behaviour with
+          | Death_Plant -> 201
+          | KillerSnail -> 232
+          | _ -> clr)
+          (* mem = 0L; *)
+          (* Memory is not used in this version *);
       })
     (List.combine names colors)
 
@@ -105,7 +111,10 @@ exception InvalidBehaviour of string
 let step (_ : int) (board : Board.t) player =
   let updated_player = update_stats player in
   match land_type_to_cell_state (Board.get_cell board player.location) with
-  | Board.Bad -> { updated_player with alive = false }
+  | Board.Bad -> (
+      match player.behavior with
+      | AssemblyRunner -> { updated_player with alive = false }
+      | _ -> updated_player)
   | Board.Good -> updated_player
 
 (* Get the cell state in a given direction from player's position, with wrapping *)
@@ -120,7 +129,7 @@ let get_cell_in_direction (board : Board.t) (player_pos : int * int)
 
   Board.get_cell board (new_x, new_y)
 
-let get_intent (board : Board.t) (player : t) =
+let get_intent (board : Board.t) (_people : t list) (time : int) (player : t) =
   match player.behavior with
   | Stationary -> Move.Stay
   | RandomWalk ->
@@ -149,6 +158,15 @@ let get_intent (board : Board.t) (player : t) =
         List.nth safe_directions index
       else Move.Stay
   | Death_Plant -> Move.Stay
+  | KillerSnail ->
+      if time mod 3 = 0 then
+        (* TODO(penelopeysm): use players to get intent *)
+        let directions =
+          [ Move.North; Move.South; Move.East; Move.West; Move.Stay ]
+        in
+        let index = Random.int (List.length directions) in
+        List.nth directions index
+      else Move.Stay
   | AssemblyRunner ->
       raise
         (InvalidBehaviour
