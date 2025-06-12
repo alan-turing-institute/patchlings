@@ -1,9 +1,9 @@
 # Patchlings 2 - Multi-Agent Simulation Makefile
 
-.PHONY: all build clean install deps controller ocaml run simulate visualize map test help
+.PHONY: all build clean install deps controller ocaml run simulate visualize map test help submodules
 
 # Default target
-all: build
+all: submodules build
 
 # Help target
 help:
@@ -11,7 +11,8 @@ help:
 	@echo "====================================="
 	@echo ""
 	@echo "Available targets:"
-	@echo "  all         - Build everything (default)"
+	@echo "  all         - Initialize submodules and build everything (default)"
+	@echo "  submodules  - Initialize and update git submodules"
 	@echo "  deps        - Install all dependencies"
 	@echo "  build       - Build OCaml and Rust components"
 	@echo "  ocaml       - Build only OCaml components"
@@ -51,18 +52,33 @@ install:
 		exit 1; \
 	fi
 
+# Initialize and update git submodules
+submodules:
+	@echo "Initializing git submodules..."
+	@if [ -f .gitmodules ]; then \
+		echo "Found .gitmodules file, initializing submodules..."; \
+		git submodule init; \
+		git submodule update; \
+	else \
+		echo "No .gitmodules file found."; \
+		if [ -d map_maker/.git ]; then \
+			echo "map_maker appears to be a separate git repository."; \
+			echo "Consider adding it as a submodule if needed."; \
+		fi; \
+	fi
+
 # Install project dependencies
-deps: install
+deps: install submodules
 	@echo "Installing OCaml dependencies..."
 	opam install . --deps-only -y
 	@echo "Installing Python dependencies for map_maker..."
 	cd map_maker && pip install -e .
 
 # Build all components
-build: ocaml controller
+build: submodules ocaml controller
 
 # Build OCaml components
-ocaml:
+ocaml: submodules
 	@echo "Building OCaml components..."
 	dune build
 
@@ -84,13 +100,13 @@ run: build
 simulate: run visualize
 
 # Generate visualization from latest simulation data
-visualize:
+visualize: submodules
 	@echo "Generating visualization from simulation data..."
 	cd map_maker && python py_script/visualize_simulation.py
 	@echo "Visualization frames generated in output_visuals/"
 
 # Generate map using map_maker pipeline
-map:
+map: submodules
 	@echo "Generating maps using map_maker pipeline..."
 	cd map_maker && python py_script/make_base_map.py
 	cd map_maker && python py_script/make_big_hex.py  
