@@ -10,18 +10,25 @@ let initialise grid_size n_players =
   let initial_board = Board.init_with_size (Random.int 10) grid_size in
   let runner = Runner.init () in
   (* Adjust player count and names based on available assembly programs *)
-  let actual_n_players, player_names = match (Runner.get_n_programs runner, Runner.get_player_names runner) with
-    | (Some n, Some names) -> 
+  let actual_n_players, player_names =
+    match (Runner.get_n_programs runner, Runner.get_player_names runner) with
+    | Some n, Some names ->
         if n <> n_players then
-          Printf.printf "Adjusting player count from %d to %d (based on available assembly programs)\n" n_players n;
+          Printf.printf
+            "Adjusting player count from %d to %d (based on available assembly \
+             programs)\n"
+            n_players n;
         (n, names)
-    | (Some n, None) -> 
+    | Some n, None ->
         Printf.printf "Using %d players with default names\n" n;
         (n, [])
-    | (None, _) -> (n_players, [])
+    | None, _ -> (n_players, [])
   in
-  let behaviours = [ Player.AssemblyRunner;] in
-  let test_players = Player.init_with_names actual_n_players initial_board behaviours player_names in
+  let behaviours = [ Player.AssemblyRunner ] in
+  let test_players =
+    Player.init_with_names actual_n_players initial_board behaviours
+      player_names
+  in
   (Game_state.init initial_board test_players, runner)
 
 (* Generate a stream of game states, starting from an initial state, and
@@ -37,16 +44,6 @@ let trajectory initial_state runner : Game_state.t Seq.t =
   in
   Seq.unfold unfold_step initial_state
 
-let skip (iterations : int) initial_state runner : Game_state.t =
-  let rec _skip iterations state =
-    if iterations <= 0 || Game_state.is_done state then state
-    else
-      let seed = Random.int 1000 in
-      let new_state = Game_state.step_with_runner seed runner state in
-      _skip (iterations - 1) new_state
-  in
-  _skip iterations initial_state
-
 (* Run non-interactively, printing output to terminal *)
 let to_terminal grid_size n_players max_iterations =
   Printf.printf "Patchlings 2 - Multi-Agent Simulation\n";
@@ -54,13 +51,19 @@ let to_terminal grid_size n_players max_iterations =
 
   let initial_state, runner = initialise grid_size n_players in
   (* Add initial state to the beginning of the history *)
-  let full_game_history = initial_state :: (trajectory initial_state runner |> Seq.take max_iterations |> List.of_seq) in
-  
+  let full_game_history =
+    initial_state
+    :: (trajectory initial_state runner
+       |> Seq.take max_iterations |> List.of_seq)
+  in
+
   let game_history_list_rev =
-    full_game_history |> List.mapi (fun i state ->
-        Printf.printf "=== Iteration %d / %d ===\n" i max_iterations;
-        Game_state.print_with_players state;
-        state) |> List.rev
+    full_game_history
+    |> List.mapi (fun i state ->
+           Printf.printf "=== Iteration %d / %d ===\n" i max_iterations;
+           Game_state.print_with_players state;
+           state)
+    |> List.rev
   in
   Runner.terminate runner;
 
@@ -72,26 +75,88 @@ let to_terminal grid_size n_players max_iterations =
   else print_endline "Simulation complete (max iterations reached)!";
 
   (* Save complete game history to single JSON file *)
-  let complete_history_filename = Json_export.generate_filename "complete_simulation" "json" in
-  Json_export.save_game_history_json (List.rev game_history_list_rev) complete_history_filename;
-  Printf.printf "Complete simulation data saved to %s\n" complete_history_filename
+  let complete_history_filename =
+    Json_export.generate_filename "complete_simulation" "json"
+  in
+  Json_export.save_game_history_json
+    (List.rev game_history_list_rev)
+    complete_history_filename;
+  Printf.printf "Complete simulation data saved to %s\n"
+    complete_history_filename
 
 (* TUI code *)
 
+module IntMap = Map.Make (Int)
+
 type tui_state = {
-  game_state : Game_state.t;
-  current_iter : int;
+  max_time : int;
+  current_time : int;
+  game_history : Game_state.t IntMap.t;
 }
 
-let run_tui grid_size n_players max_iterations =
+let get_game_state (tui_state : tui_state) =
+  match IntMap.find_opt tui_state.current_time tui_state.game_history with
+  | Some game_state -> game_state
+  | None ->
+      failwith
+      @@ Printf.sprintf
+           "No game state found for time %d in history (should not happen)"
+           tui_state.current_time
+
+(* step forward by one game iteration *)
+let step_tui_state (tui_state : tui_state) (runner : Runner.runner_option) =
+  let seed = Random.int 1000 in
+  let game_state = get_game_state tui_state in
+  let new_state = Game_state.step_with_runner seed runner game_state in
+  let new_time = new_state.time in
+  let new_history = IntMap.add new_time new_state tui_state.game_history in
+  { tui_state with current_time = new_time; game_history = new_history }
+
+(* skip forward by n game iterations *)
+let skip_tui_state_by (n : int) (tui_state : tui_state)
+    (runner : Runner.runner_option) =
+  if n < 0 then failwith "cannot skip backwards";
+  let rec _skip_by n st =
+    if n = 0 then st else _skip_by (n - 1) (step_tui_state st runner)
+  in
+  _skip_by n tui_state
+
+(* skip to arbitrary game time *)
+let rec skip_to (time : int) (tui_state : tui_state)
+    (runner : Runner.runner_option) =
+  if time < 0 then skip_to 0 tui_state runner
+  else if time > tui_state.max_time then skip_to tui_state.max_time tui_state runner
+  else
+    match IntMap.find_opt time tui_state.game_history with
+    | Some _ ->
+        {
+          tui_state with
+          current_time = time;
+          game_history = tui_state.game_history;
+        }
+    | None -> (
+        match IntMap.max_binding_opt tui_state.game_history with
+        | Some (newest_time, _) ->
+            if time < newest_time then failwith "map times not sequential"
+            else skip_tui_state_by (time - newest_time) tui_state runner
+        | None -> failwith "empty history, should not happen")
+
+let run_tui grid_size n_players max_time =
   let open Minttea in
   (* let open Leaves in *)
   let initial_state, runner = initialise grid_size n_players in
-  let initial_model = { game_state = initial_state; current_iter = 0 } in
+  let initial_model =
+    {
+      max_time;
+      current_time = initial_state.time;
+      game_history = IntMap.singleton initial_state.time initial_state;
+    }
+  in
 
+  (* Define the model type *)
   let init _model = Command.Noop in
   let update event model =
-    if model.current_iter > max_iterations then (
+    if model.current_time == max_time then (
       Runner.terminate runner;
       (model, Command.Quit))
     else
@@ -99,52 +164,42 @@ let run_tui grid_size n_players max_iterations =
       | Event.KeyDown (Key "q") ->
           Runner.terminate runner;
           (model, Command.Quit)
-      | Event.KeyDown (Key "s") ->
-          let new_game_state = skip 5 model.game_state runner in
-          let new_model =
-            {
-              game_state = new_game_state;
-              current_iter = model.current_iter + 5;
-            }
-          in
-          (new_model, Command.Noop)
+      | Event.KeyDown (Key "f") ->
+        let new_model = skip_to (model.current_time + 5) model runner in
+        let new_cmd = if new_model.current_time > max_time then Command.Quit else Command.Noop
+        in (new_model, new_cmd)
+      | Event.KeyDown (Key "b") ->
+          (skip_to (model.current_time - 5) model runner, Command.Noop)
       | Event.KeyDown (Right | Key "n") ->
-          let new_game_state = skip 1 model.game_state runner in
-          let new_model =
-            {
-              game_state = new_game_state;
-              current_iter = model.current_iter + 1;
-            }
-          in
-          (new_model, Command.Noop)
+        let new_model = skip_to (model.current_time + 1) model runner in
+        let new_cmd = if new_model.current_time > max_time then Command.Quit else Command.Noop
+        in (new_model, new_cmd)
       | Event.KeyDown (Left | Key "p") ->
-          print_endline "Previous iteration (not implemented)";
-          (model, Command.Noop)
+          (skip_to (model.current_time - 1) model runner, Command.Noop)
       | _ -> (model, Command.Noop)
   in
 
   let view model =
     (* Render the game state and player statuses *)
-    let board_and_players =
-      Game_state.string_of_board_and_players model.game_state
-    in
-    let player_statuses =
-      Game_state.table_of_player_statuses model.game_state
-    in
+    let game_state = get_game_state model in
+    let board_and_players = Game_state.string_of_board_and_players game_state in
+    let player_statuses = Game_state.table_of_player_statuses game_state in
     let info =
-      if model.current_iter > max_iterations then
+      if model.current_time >= max_time then
         Pretty.("Simulation complete :)" |> fg 28 |> bold)
-      else if Game_state.is_done model.game_state then
+      else if Game_state.is_done game_state then
         Pretty.("All players have died :(" |> fg 196 |> bold)
       else
         Pretty.(
           vcat Centre
             [
               Pretty.bold
-                (Printf.sprintf "=== Iteration %d / %d ===" model.current_iter
-                   max_iterations);
-              Pretty.fg 93 "->/n: next   q: quit";
-              Pretty.fg 93 "   s: skip 5 iters  ";
+                (Printf.sprintf "=== Iteration %d / %d ===" model.current_time
+                   max_time);
+              Pretty.fg 93 "<-/p : prev         ->/n: next        ";
+              Pretty.fg 93 "   b : back by 5       f: forward by 5";
+              Pretty.fg 93 "              q : quit                ";
+
             ])
     in
     Pretty.(
