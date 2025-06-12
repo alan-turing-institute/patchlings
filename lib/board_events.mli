@@ -1,11 +1,11 @@
 (** Board event processing module for environmental dynamics *)
 
 type event_config = {
-  forest_death_chance : int;  (** Percentage chance for forest to die *)
-  forest_growth_chance : int;  (** Percentage chance for forest to grow *)
-  volcano_spawn_chance : int;  (** Percentage chance for volcano to spawn *)
-  volcano_clear_chance : int;  (** Percentage chance for volcano to clear *)
-  ocean_spread_chance : int;  (** Percentage chance for ocean to spread *)
+  forest_death_chance : float;
+  forest_growth_chance : float;
+  volcano_spawn_chance : float;
+  volcano_clear_chance : float;
+  ocean_spread_chance : float;
 }
 (** Event configuration type *)
 

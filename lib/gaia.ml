@@ -72,11 +72,9 @@ let analyze_terrain board =
 (* Calculate adjustment for a single percentage *)
 let calculate_adjustment ~current ~target ~base_chance ~smoothing =
   let error = target -. current in
-  (* Scale error by 100 to convert to percentage points *)
-  let raw_adjustment = error *. 100.0 *. smoothing in
-  let adjusted = base_chance + int_of_float raw_adjustment in
-  (* Clamp between 0 and 100 *)
-  max 0 (min 100 adjusted)
+  let raw_adjustment = error *. smoothing in
+  let adjusted = base_chance +. raw_adjustment in
+  max 0.0 (min 1.0 adjusted)
 
 (* Get adjusted event configuration *)
 let get_adjusted_config gaia board =
@@ -85,8 +83,10 @@ let get_adjusted_config gaia board =
 
   (* Find current percentages *)
   let current_ocean = List.assoc Ocean distribution in
-  let current_forest = List.assoc Forest distribution in
   let current_lava = List.assoc Lava distribution in
+  (* For forests, calculate their percentage of remaining land, ignoring ocean. *)
+  let current_forest_absolute = List.assoc Forest distribution in
+  let current_forest =  current_forest_absolute /. (1.0 -. current_ocean) in
 
   (* Calculate imbalances *)
   let ocean_error = gaia.targets.ocean_target -. current_ocean in
@@ -99,7 +99,7 @@ let get_adjusted_config gaia board =
       (* Need more forest: increase growth, decrease death *)
       calculate_adjustment ~current:current_forest
         ~target:gaia.targets.forest_target
-        ~base_chance:(base.forest_growth_chance * 2) (* Boost growth *)
+        ~base_chance:(base.forest_growth_chance *. 2.0) (* Boost growth *)
         ~smoothing:gaia.smoothing_factor
     else (* Too much forest: normal growth *)
       base.forest_growth_chance
@@ -111,11 +111,11 @@ let get_adjusted_config gaia board =
       calculate_adjustment
         ~current:gaia.targets.forest_target (* Invert for death *)
         ~target:current_forest
-        ~base_chance:(base.forest_death_chance * 2) (* Boost death *)
+        ~base_chance:(base.forest_death_chance *. 2.0) (* Boost death *)
         ~smoothing:gaia.smoothing_factor
     else
       (* Need forest or balanced: reduce death *)
-      max 1 (base.forest_death_chance / 2)
+      base.forest_death_chance /. 2.0
   in
 
   (* Adjust ocean spreading *)
@@ -124,12 +124,12 @@ let get_adjusted_config gaia board =
       (* Need more ocean *)
       calculate_adjustment ~current:current_ocean
         ~target:gaia.targets.ocean_target
-        ~base_chance:(base.ocean_spread_chance * 3) (* Boost spreading *)
+        ~base_chance:(base.ocean_spread_chance *. 3.0) (* Boost spreading *)
         ~smoothing:gaia.smoothing_factor
     else if ocean_error < -0.05 then (* Way too much ocean: stop spreading *)
-      0
+      0.0
     else (* Slightly too much or balanced *)
-      max 1 (base.ocean_spread_chance / 2)
+      base.ocean_spread_chance /. 2.0
   in
 
   (* Adjust volcano events *)
@@ -138,7 +138,7 @@ let get_adjusted_config gaia board =
       (* Need more lava *)
       calculate_adjustment ~current:current_lava
         ~target:gaia.targets.lava_target
-        ~base_chance:(base.volcano_spawn_chance * 5) (* Boost spawning *)
+        ~base_chance:(base.volcano_spawn_chance *. 5.0) (* Boost spawning *)
         ~smoothing:gaia.smoothing_factor
     else (* Enough or too much lava *)
       base.volcano_spawn_chance
@@ -150,10 +150,10 @@ let get_adjusted_config gaia board =
       calculate_adjustment
         ~current:gaia.targets.lava_target (* Invert for clearing *)
         ~target:current_lava
-        ~base_chance:(base.volcano_clear_chance * 3) (* Boost clearing *)
+        ~base_chance:(base.volcano_clear_chance *. 3.0) (* Boost clearing *)
         ~smoothing:gaia.smoothing_factor
     else (* Need lava or balanced *)
-      max 1 (base.volcano_clear_chance / 2)
+      base.volcano_clear_chance /. 2.0
   in
 
   {

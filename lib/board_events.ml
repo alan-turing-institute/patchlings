@@ -2,21 +2,21 @@ open Board
 
 (* Event configuration type *)
 type event_config = {
-  forest_death_chance : int; (* percentage chance *)
-  forest_growth_chance : int; (* percentage chance *)
-  volcano_spawn_chance : int; (* percentage chance *)
-  volcano_clear_chance : int; (* percentage chance *)
-  ocean_spread_chance : int; (* percentage chance *)
+  forest_death_chance : float;
+  forest_growth_chance : float;
+  volcano_spawn_chance : float;
+  volcano_clear_chance : float;
+  ocean_spread_chance : float;
 }
 
 (* Default configuration *)
 let default_event_config =
   {
-    forest_death_chance = 5;
-    forest_growth_chance = 5;
-    volcano_spawn_chance = 1;
-    volcano_clear_chance = 5;
-    ocean_spread_chance = 2;
+    forest_death_chance = 0.05;
+    forest_growth_chance = 0.05;
+    volcano_spawn_chance = 0.01;
+    volcano_clear_chance = 0.05;
+    ocean_spread_chance = 0.02;
   }
 
 (* Helper function to get adjacent open land positions *)
@@ -84,7 +84,7 @@ let process_forest_death (config : event_config) (board : Board.t) : Board.t =
     for j = 0 to cols - 1 do
       if
         Board.get_cell board (i, j) = Forest
-        && Random.int 100 < config.forest_death_chance
+        && Random.float 1.0 < config.forest_death_chance
       then Board.set_cell result (i, j) Open_land
     done
   done;
@@ -102,11 +102,11 @@ let process_volcano_events (config : event_config) (board : Board.t) : Board.t =
       match current with
       | Lava ->
           (* Volcano can clear with configured chance *)
-          if Random.int 100 < config.volcano_clear_chance then
+          if Random.float 1.0 < config.volcano_clear_chance then
             Board.set_cell result (i, j) Open_land
       | Ocean | Open_land ->
           (* Can become volcano with configured chance *)
-          if Random.int 100 < config.volcano_spawn_chance then
+          if Random.float 1.0 < config.volcano_spawn_chance then
             Board.set_cell result (i, j) Lava
       | Forest ->
           (* Forest tiles don't spawn volcanoes *)
@@ -126,7 +126,7 @@ let process_ocean_spread (config : event_config) (board : Board.t) : Board.t =
       if
         Board.get_cell board (i, j) = Open_land
         && has_adjacent_ocean board i j
-        && Random.int 100 < config.ocean_spread_chance
+        && Random.float 1.0 < config.ocean_spread_chance
       then Board.set_cell result (i, j) Ocean
     done
   done;
@@ -142,7 +142,7 @@ let process_forest_growth (config : event_config) (board : Board.t) : Board.t =
     for j = 0 to cols - 1 do
       if
         Board.get_cell board (i, j) = Forest
-        && Random.int 100 < config.forest_growth_chance
+        && Random.float 1.0 < config.forest_growth_chance
       then
         let open_positions = get_adjacent_open_positions board i j in
         if List.length open_positions > 0 then
