@@ -7,7 +7,7 @@ open Cmdliner.Term.Syntax
 (* Try changing this to 1, 2, or 3 to see different effects *)
 let initialise grid_size n_npcs =
   Random.self_init ();
-  let initial_board = Board.init_with_size (Random.int 10) grid_size in
+  let initial_board = Board.init ~grid_size:(Some grid_size) (Random.int 10) in
   let runner = Runner.init () in
   (* Adjust player count and names based on available assembly programs *)
   let player_names =
@@ -18,12 +18,16 @@ let initialise grid_size n_npcs =
   let test_players =
     Player.init player_names initial_board [ Player.AssemblyRunner ]
   in
-  let npc_names = List.init n_npcs (fun _ -> "MERCHANT OF DEATH") in
-  let npcs =
-    Player.init ~start_id:100 npc_names initial_board [ Player.Death_Plant ]
+  let death_plant_names = List.init n_npcs (fun _ -> "MERCHANT OF DEATH") in
+  let death_plants =
+    Player.init ~start_id:100 death_plant_names initial_board
+      [ Player.Death_Plant ]
+  in
+  let snails =
+    Player.init ~start_id:200 [ "SNAIL" ] initial_board [ Player.KillerSnail ]
   in
   (* Combine test players and NPCs *)
-  let all_players = test_players @ npcs in
+  let all_players = test_players @ death_plants @ snails in
   (* Print initial board and player information *)
   (Game_state.init initial_board all_players, runner)
 

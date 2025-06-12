@@ -1,10 +1,3 @@
-module Coordinate : sig
-  type t = int * int
-  val compare : t -> t -> int
-end
-
-module CoordinateMap : Map.S with type key = Coordinate.t
-
 type cell_state =
   | Bad
   | Good
@@ -37,19 +30,9 @@ val default_terrain_config : terrain_config
 
 val step : int -> t -> t
 
-val init : int -> t
-(** [init r] returns a randomly initialized board using the random number [r] and default configuration. *)
-
-val init_with_config : int -> terrain_config -> t
-(** [init_with_config r config] returns a randomly initialized board using the random number [r] 
-    and specified terrain configuration. *)
-
-val init_with_size : int -> int -> t
-(** [init_with_size r grid_size] returns a randomly initialized board using the random number [r] 
-    and terrain grouping size [grid_size]. Higher grid_size creates larger, more consolidated terrain regions. *)
-
-val init_with_size_and_config : int -> int -> terrain_config -> t
-(** [init_with_size_and_config r grid_size config] returns a randomly initialized board using the random number [r], 
+val init :
+  ?grid_size:int option -> ?config:terrain_config -> int -> t
+(** [init grid_size config r] returns a randomly initialized board using the random number [r], 
     terrain grouping size [grid_size], and specified terrain configuration. *)
 
 val generate_terrain_layer_with_size : t -> land_type -> int -> int -> t
@@ -69,13 +52,6 @@ val dilate_n_times : t -> land_type -> int -> t
 
 val erode_n_times : t -> land_type -> int -> t
 (** [erode_n_times board terrain_type iterations] applies erosion [iterations] times. *)
-
-val print : t -> unit
-(** [print b] prints the board [b] in plain text format to the standard output. *)
-
-val print_with_emojis : t -> unit
-(** [print_with_emojis b] prints the board [b] using emojis to the standard output.
-    Uses 🔥 for Bad cells and 🌱 for Good cells. *)
 
 val get_cell : t -> int * int -> land_type
 
