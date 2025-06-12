@@ -3,6 +3,7 @@ let interact (player_1 : Player.t) (player_2 : Player.t) :
   (* don't rerun interaction if player_1 is already dead *)
   if not player_1.alive then (player_1, [])
   else
+    let x, y = player_1.location in
     match compare player_1 player_2 with
     | 0 -> (player_1, []) (* Same player, no interaction *)
     | _ -> (
@@ -12,14 +13,15 @@ let interact (player_1 : Player.t) (player_2 : Player.t) :
         | _, Death_Plant ->
             ( { player_1 with alive = false },
               [
-                Printf.sprintf "Player %s was killed by a Death Plant 📛!"
+                Printf.sprintf
+                  "(%d,%d): Player %s was killed by a Death Plant 📛!" x y
                   player_1.name;
               ] )
         | _, KillerSnail ->
             ( { player_1 with alive = false },
               [
-                Printf.sprintf "Player %s was killed by the Snail 🐌!"
-                  player_1.name;
+                Printf.sprintf "(%d,%d): Player %s was killed by the Snail 🐌!" x
+                  y player_1.name;
               ] )
         | _, _ -> (player_1, []))
 

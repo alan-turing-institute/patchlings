@@ -23,6 +23,6 @@ val compare : t -> t -> int
 module Set : Set.S with type elt = t
 
 val init : ?start_id:int -> string list -> Board.t -> behavior list -> t list
-val step : int -> Board.t -> t -> t
+val step : int -> Board.t -> t -> (t * string list)
 val get_intent : Board.t -> t list -> int -> t -> Move.t
 val string_of_behavior : behavior -> string

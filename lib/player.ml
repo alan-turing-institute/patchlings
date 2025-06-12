@@ -111,14 +111,27 @@ let update_stats player =
 
 exception InvalidBehaviour of string
 
-let step (_ : int) (board : Board.t) player =
+let step (_ : int) (board : Board.t) player : t * string list =
   let updated_player = update_stats player in
-  match land_type_to_cell_state (Board.get_cell board player.location) with
-  | Board.Bad -> (
-      match player.behavior with
-      | AssemblyRunner -> { updated_player with alive = false }
-      | _ -> updated_player)
-  | Board.Good -> updated_player
+  if not updated_player.alive then
+    (* If the player is already dead, return immediately *)
+    (updated_player, [])
+  else
+    match land_type_to_cell_state (Board.get_cell board player.location) with
+    | Board.Bad -> (
+        match player.behavior with
+        | AssemblyRunner ->
+            let x, y =
+              Position.normalise (Board.dimensions board) player.location
+            in
+            ( { updated_player with alive = false },
+              [
+                Printf.sprintf
+                  "(%d,%d): Player %s died by stepping on a bad tile!" x y
+                  player.name;
+              ] )
+        | _ -> (updated_player, []))
+    | Board.Good -> (updated_player, [])
 
 (* Get the cell state in a given direction from player's position, with wrapping *)
 let get_cell_in_direction (board : Board.t) (player_pos : int * int)
@@ -163,10 +176,10 @@ let get_intent (board : Board.t) (people : t list) (time : int) (player : t) =
   | Death_Plant -> Move.Stay
   | KillerSnail ->
       if time mod 2 = 0 then
-        (* KillerSnail moves towards the nearest player every 3 turns *)
+        (* KillerSnail moves towards the nearest live player every 3 turns *)
         let pc_locations =
           people
-          |> List.filter (fun p -> p.behavior == AssemblyRunner)
+          |> List.filter (fun p -> p.behavior == AssemblyRunner && p.alive)
           |> List.map (fun p -> p.location)
         in
         let nearest_player_position =

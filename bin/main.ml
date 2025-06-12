@@ -144,7 +144,6 @@ let rec skip_to (time : int) (tui_state : tui_state)
 
 let run_tui grid_size n_npcs max_time =
   let open Minttea in
-  (* let open Leaves in *)
   let initial_state, runner = initialise grid_size n_npcs in
   let initial_model =
     {
