@@ -8,7 +8,11 @@ _take_turn:
     movk x3, 0x4645, lsl #16
     movk x3, 0x5453, lsl #32
     movk x3, 0x5857, lsl #48
-    b step
+    lsr x2, x1, 56 ; Move the first byte of x1 to the last byte of x2.
+    cmp x2, #'F' ; If that byte is #'F', return #'.' to stay still, otherwise call step.
+    bne step
+    mov x0, #'.'
+    ret
 
 step:
     and x2, x0, 0xFF ; Load the last byte of x0 to x2
