@@ -253,10 +253,11 @@ let table_of_player_statuses ?(n_columns : int = 3) (state : t) : string =
 let string_of_t (state : t) =
   let board_string = string_of_board_and_players state in
   let player_statuses_string = table_of_player_statuses state in
+  let messages_string = String.concat "\n" state.messages in
   let time_string = Printf.sprintf "Time: %d" state.time in
   let gaia_status = Gaia.status_report state.gaia state.board in
   String.concat "\n"
-    [ board_string; player_statuses_string; time_string; ""; gaia_status ]
+    [ board_string; player_statuses_string; messages_string; time_string; ""; gaia_status ]
 
 let print_with_players state =
   print_newline ();
